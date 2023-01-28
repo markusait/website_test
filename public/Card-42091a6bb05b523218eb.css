@@ -1,0 +1,1 @@
+.LinkCard{display:grid;place-items:center;padding:48px 32px;border-radius:12px;box-shadow:0 8px 34px var(--cardShadowColor);background:var(--cardBackground)}@media (min-width:600px){.LinkCard{padding:80px}}.LinkCard__content{width:100%;max-width:calc(var(--layoutMaxWidth)/2)}

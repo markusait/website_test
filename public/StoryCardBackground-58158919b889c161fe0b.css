@@ -1,0 +1,1 @@
+.LinkStoryCardBackground{position:relative;width:100%;height:287px;overflow:hidden;border-radius:8px}.LinkStoryCardBackground__image{width:100%;height:auto;transform:scale(var(--linkStoryCardBackgroundScale));transform-origin:50% 50%;transition:transform .4s;-o-object-fit:cover;object-fit:cover;will-change:transform}

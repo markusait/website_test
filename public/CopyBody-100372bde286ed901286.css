@@ -1,0 +1,1 @@
+.LinkCopyBody{display:grid;gap:16px;max-width:var(--copyMaxWidth);padding-right:2em}.LinkCopyBody--variantHero{font:var(--fontHeroBody)}.LinkCopyBody--variantSection{font:var(--fontSectionBody)}.LinkCopyBody--variantSubsection{font:var(--fontSubsectionBody)}.LinkCopyBody--variantDetail{font:var(--fontDetailBody)}

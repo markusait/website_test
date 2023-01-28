@@ -1,0 +1,1 @@
+.Spinner{display:inline-block}.Spinner__circle{transform-box:fill-box;transform-origin:center;-webkit-animation:SpinnerAnimationRotation .6s linear infinite;animation:SpinnerAnimationRotation .6s linear infinite}@-webkit-keyframes SpinnerAnimationRotation{to{transform:rotate(1turn)}}@keyframes SpinnerAnimationRotation{to{transform:rotate(1turn)}}

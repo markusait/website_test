@@ -1,0 +1,1 @@
+.LinkRowLayout{display:grid;gap:32px}@media (min-width:600px){.LinkRowLayout{gap:48px}}@media (min-width:900px){.LinkRowLayout{gap:72px}}

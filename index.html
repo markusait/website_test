@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<!-- saved from url=(0016)https://link.co/ -->
+<html class="LinkRoot" lang="en-us" data-js-controller="Page" data-page-id="LinkHome" data-page-title="Link: Simple, secure one-click payments" style="--scrollbarWidth:0px;"><script type="text/javascript">(()=>{"use strict";var e={269:function(e,t,n){var i=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0});const r=i(n(187)),s=n(987);class Provider extends r.default{constructor(e){super(),this.promises={},this.attemptedSubscriptions=new Set,this.subscriptions=[],this.checkConnectionRunning=!1,this.nextId=1,this.connected=!1,this.accounts=[],this.selectedAddress=void 0,this.coinbase=void 0,this.enable=this.enable.bind(this),this.doSend=this.doSend.bind(this),this.send=this.send.bind(this),this.sendBatch=this.sendBatch.bind(this),this.subscribe=this.subscribe.bind(this),this.unsubscribe=this.unsubscribe.bind(this),this.resumeSubscriptions=this.resumeSubscriptions.bind(this),this.sendAsync=this.sendAsync.bind(this),this.sendAsyncBatch=this.sendAsyncBatch.bind(this),this.isConnected=this.isConnected.bind(this),this.close=this.close.bind(this),this.request=this.request.bind(this),this.connection=e,this.on("connect",this.resumeSubscriptions),this.connection.on("connect",(()=>this.checkConnection(1e3))),this.connection.on("close",(()=>{this.connected=!1,this.attemptedSubscriptions.clear(),this.emit("close"),this.emit("disconnect")})),this.connection.on("payload",(e=>{const{id:t,method:n,error:i,result:r}=e;if(void 0!==t){if(this.promises[t]){const n=this.promises[t].method;if(n&&["eth_accounts","eth_requestAccounts"].includes(n)){const e=r||[];this.accounts=e,this.selectedAddress=e[0],this.coinbase=e[0]}e.error?this.promises[t].reject(i):this.promises[t].resolve(r),delete this.promises[t]}}else n&&n.indexOf("_subscription")>-1&&(this.emit(e.params.subscription,e.params.result),this.emit(n,e.params),this.emit("message",{type:e.method,data:{subscription:e.params.subscription,result:e.params.result}}),this.emit("data",e))})),this.on("newListener",(e=>{Object.keys(this.eventHandlers).includes(e)&&!this.attemptedSubscription(e)&&this.connected&&(this.startSubscription(e),"networkChanged"===e&&console.warn("The networkChanged event is being deprecated, use chainChanged instead"))})),this.eventHandlers={networkChanged:e=>{this.networkVersion="string"==typeof e?parseInt(e):e,this.emit("networkChanged",this.networkVersion)},chainChanged:e=>{this.providerChainId=e,this.manualChainId||this.emit("chainChanged",e)},chainsChanged:e=>{this.emit("chainsChanged",e)},accountsChanged:e=>{this.selectedAddress=e[0],this.emit("accountsChanged",e)},assetsChanged:e=>{this.emit("assetsChanged",e)}}}get chainId(){return this.manualChainId||this.providerChainId}async checkConnection(e=4e3){if(!this.checkConnectionRunning&&!this.connected){clearTimeout(this.checkConnectionTimer),this.checkConnectionTimer=void 0,this.checkConnectionRunning=!0;try{this.networkVersion=await this.doSend("net_version",[],void 0,!1),this.providerChainId=await this.doSend("eth_chainId",[],void 0,!1),this.connected=!0}catch(t){this.checkConnectionTimer=setTimeout((()=>this.checkConnection()),e),this.connected=!1}finally{this.checkConnectionRunning=!1,this.connected&&this.emit("connect",{chainId:this.providerChainId})}}}attemptedSubscription(e){return this.attemptedSubscriptions.has(e)}setSubscriptionAttempted(e){this.attemptedSubscriptions.add(e)}async startSubscription(e){console.debug(`starting subscription for ${e} events`),this.setSubscriptionAttempted(e);try{const t=await this.subscribe("eth_subscribe",e);this.on(t,this.eventHandlers[e])}catch(t){console.warn(`Unable to subscribe to ${e}`,t)}}resumeSubscriptions(){Object.keys(this.eventHandlers).forEach((e=>{this.listenerCount(e)&&!this.attemptedSubscription(e)&&this.startSubscription(e)}))}async enable(){const e=await this.doSend("eth_accounts");if(e.length>0)return this.accounts=e,this.selectedAddress=e[0],this.coinbase=e[0],this.emit("enable"),e;{const e=new Error("User Denied Full Provider");throw e.code="4001",e}}doSend(e,t=[],n=this.manualChainId,i=!0){const sendFn=(i,r)=>{const o="object"==typeof e?e.method:e,c="object"==typeof e?e.params:t,a="object"==typeof e&&e.chainId||n;if(!o)return r(new Error("Method is not a valid string."));try{const e=(0,s.create)(o,c,this.nextId++,a);this.promises[e.id]={resolve:e=>i(e),reject:r,method:e.method},this.connection.send(e)}catch(e){r(e)}};return this.connected||!i?new Promise(sendFn):new Promise(((e,t)=>{const resolveSend=()=>(clearTimeout(n),e(new Promise(sendFn))),n=setTimeout((()=>{this.off("connect",resolveSend),t(new Error("Not connected"))}),5e3);this.once("connect",resolveSend)}))}async send(e,t){if("string"==typeof e&&(!t||Array.isArray(t))){const n=t;return this.doSend(e,n)}if(e&&"object"==typeof e&&"function"==typeof t){const n=t;return this.sendAsync(e,n)}return this.request(e)}sendBatch(e){return Promise.all(e.map((e=>this.doSend(e.method,e.params))))}async subscribe(e,t,n=[]){const i=await this.doSend(e,[t,...n]);return this.subscriptions.push(i),i}async unsubscribe(e,t){const n=await this.doSend(e,[t]);if(n)return this.subscriptions=this.subscriptions.filter((e=>e!==t)),this.removeAllListeners(t),n}async sendAsync(e,t){if(!t||"function"!=typeof t)return new Error("Invalid or undefined callback provided to sendAsync");if(!e)return t(new Error("Invalid Payload"));if(Array.isArray(e)){const n=e.map((e=>({...e,jsonrpc:"2.0"}))),i=t;return this.sendAsyncBatch(n,i)}{const n={...e,jsonrpc:"2.0"},i=t;try{const e=await this.doSend(n.method,n.params);i(null,{id:n.id,jsonrpc:n.jsonrpc,result:e})}catch(e){i(e)}}}async sendAsyncBatch(e,t){try{const n=await this.sendBatch(e);t(null,n.map(((t,n)=>({id:e[n].id,jsonrpc:e[n].jsonrpc,result:t}))))}catch(e){t(e)}}isConnected(){return this.connected}close(){this.connection&&this.connection.close&&this.connection.close(),this.off("connect",this.resumeSubscriptions),this.connected=!1;const e=new Error("Provider closed, subscription lost, please subscribe again.");this.subscriptions.forEach((t=>this.emit(t,e))),this.subscriptions=[],this.manualChainId=void 0,this.providerChainId=void 0,this.networkVersion=void 0,this.selectedAddress=void 0,this.coinbase=void 0}async request(e){return this.doSend(e.method,e.params,e.chainId)}setChain(e){"number"==typeof e&&(e="0x"+e.toString(16));const t=e!==this.chainId;this.manualChainId=e,t&&this.emit("chainChanged",this.chainId)}}t.default=Provider},987:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.create=void 0,t.create=function create(e,t=[],n,i){const r={id:n,method:e,params:t,jsonrpc:"2.0"};if(i&&(r.chainId=i),"eth_sendTransaction"===r.method){const e=function isChainMismatch(e){if("eth_sendTransaction"!==e.method)return!1;const t=e.params[0]||{},n=t.chainId;return"chainId"in t&&parseInt(n)!==parseInt(e.chainId||n)}(r);if(e)throw new Error(`Payload chainId (${e}) inconsistent with specified target chainId: ${i}`);return function updatePayloadChain(e){const t=e.params[0]||{};return{...e,params:[{...t,chainId:t.chainId||e.chainId},...e.params.slice(1)]}}(r)}return r}},187:e=>{var t,n="object"==typeof Reflect?Reflect:null,i=n&&"function"==typeof n.apply?n.apply:function ReflectApply(e,t,n){return Function.prototype.apply.call(e,t,n)};t=n&&"function"==typeof n.ownKeys?n.ownKeys:Object.getOwnPropertySymbols?function ReflectOwnKeys(e){return Object.getOwnPropertyNames(e).concat(Object.getOwnPropertySymbols(e))}:function ReflectOwnKeys(e){return Object.getOwnPropertyNames(e)};var r=Number.isNaN||function NumberIsNaN(e){return e!=e};function EventEmitter(){EventEmitter.init.call(this)}e.exports=EventEmitter,e.exports.once=function once(e,t){return new Promise((function(n,i){function errorListener(n){e.removeListener(t,resolver),i(n)}function resolver(){"function"==typeof e.removeListener&&e.removeListener("error",errorListener),n([].slice.call(arguments))}eventTargetAgnosticAddListener(e,t,resolver,{once:!0}),"error"!==t&&function addErrorHandlerIfEventEmitter(e,t,n){"function"==typeof e.on&&eventTargetAgnosticAddListener(e,"error",t,n)}(e,errorListener,{once:!0})}))},EventEmitter.EventEmitter=EventEmitter,EventEmitter.prototype._events=void 0,EventEmitter.prototype._eventsCount=0,EventEmitter.prototype._maxListeners=void 0;var s=10;function checkListener(e){if("function"!=typeof e)throw new TypeError('The "listener" argument must be of type Function. Received type '+typeof e)}function _getMaxListeners(e){return void 0===e._maxListeners?EventEmitter.defaultMaxListeners:e._maxListeners}function _addListener(e,t,n,i){var r,s,o;if(checkListener(n),void 0===(s=e._events)?(s=e._events=Object.create(null),e._eventsCount=0):(void 0!==s.newListener&&(e.emit("newListener",t,n.listener?n.listener:n),s=e._events),o=s[t]),void 0===o)o=s[t]=n,++e._eventsCount;else if("function"==typeof o?o=s[t]=i?[n,o]:[o,n]:i?o.unshift(n):o.push(n),(r=_getMaxListeners(e))>0&&o.length>r&&!o.warned){o.warned=!0;var c=new Error("Possible EventEmitter memory leak detected. "+o.length+" "+String(t)+" listeners added. Use emitter.setMaxListeners() to increase limit");c.name="MaxListenersExceededWarning",c.emitter=e,c.type=t,c.count=o.length,function ProcessEmitWarning(e){console&&console.warn&&console.warn(e)}(c)}return e}function onceWrapper(){if(!this.fired)return this.target.removeListener(this.type,this.wrapFn),this.fired=!0,0===arguments.length?this.listener.call(this.target):this.listener.apply(this.target,arguments)}function _onceWrap(e,t,n){var i={fired:!1,wrapFn:void 0,target:e,type:t,listener:n},r=onceWrapper.bind(i);return r.listener=n,i.wrapFn=r,r}function _listeners(e,t,n){var i=e._events;if(void 0===i)return[];var r=i[t];return void 0===r?[]:"function"==typeof r?n?[r.listener||r]:[r]:n?function unwrapListeners(e){for(var t=new Array(e.length),n=0;n<t.length;++n)t[n]=e[n].listener||e[n];return t}(r):arrayClone(r,r.length)}function listenerCount(e){var t=this._events;if(void 0!==t){var n=t[e];if("function"==typeof n)return 1;if(void 0!==n)return n.length}return 0}function arrayClone(e,t){for(var n=new Array(t),i=0;i<t;++i)n[i]=e[i];return n}function eventTargetAgnosticAddListener(e,t,n,i){if("function"==typeof e.on)i.once?e.once(t,n):e.on(t,n);else{if("function"!=typeof e.addEventListener)throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type '+typeof e);e.addEventListener(t,(function wrapListener(r){i.once&&e.removeEventListener(t,wrapListener),n(r)}))}}Object.defineProperty(EventEmitter,"defaultMaxListeners",{enumerable:!0,get:function(){return s},set:function(e){if("number"!=typeof e||e<0||r(e))throw new RangeError('The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received '+e+".");s=e}}),EventEmitter.init=function(){void 0!==this._events&&this._events!==Object.getPrototypeOf(this)._events||(this._events=Object.create(null),this._eventsCount=0),this._maxListeners=this._maxListeners||void 0},EventEmitter.prototype.setMaxListeners=function setMaxListeners(e){if("number"!=typeof e||e<0||r(e))throw new RangeError('The value of "n" is out of range. It must be a non-negative number. Received '+e+".");return this._maxListeners=e,this},EventEmitter.prototype.getMaxListeners=function getMaxListeners(){return _getMaxListeners(this)},EventEmitter.prototype.emit=function emit(e){for(var t=[],n=1;n<arguments.length;n++)t.push(arguments[n]);var r="error"===e,s=this._events;if(void 0!==s)r=r&&void 0===s.error;else if(!r)return!1;if(r){var o;if(t.length>0&&(o=t[0]),o instanceof Error)throw o;var c=new Error("Unhandled error."+(o?" ("+o.message+")":""));throw c.context=o,c}var a=s[e];if(void 0===a)return!1;if("function"==typeof a)i(a,this,t);else{var d=a.length,h=arrayClone(a,d);for(n=0;n<d;++n)i(h[n],this,t)}return!0},EventEmitter.prototype.addListener=function addListener(e,t){return _addListener(this,e,t,!1)},EventEmitter.prototype.on=EventEmitter.prototype.addListener,EventEmitter.prototype.prependListener=function prependListener(e,t){return _addListener(this,e,t,!0)},EventEmitter.prototype.once=function once(e,t){return checkListener(t),this.on(e,_onceWrap(this,e,t)),this},EventEmitter.prototype.prependOnceListener=function prependOnceListener(e,t){return checkListener(t),this.prependListener(e,_onceWrap(this,e,t)),this},EventEmitter.prototype.removeListener=function removeListener(e,t){var n,i,r,s,o;if(checkListener(t),void 0===(i=this._events))return this;if(void 0===(n=i[e]))return this;if(n===t||n.listener===t)0==--this._eventsCount?this._events=Object.create(null):(delete i[e],i.removeListener&&this.emit("removeListener",e,n.listener||t));else if("function"!=typeof n){for(r=-1,s=n.length-1;s>=0;s--)if(n[s]===t||n[s].listener===t){o=n[s].listener,r=s;break}if(r<0)return this;0===r?n.shift():function spliceOne(e,t){for(;t+1<e.length;t++)e[t]=e[t+1];e.pop()}(n,r),1===n.length&&(i[e]=n[0]),void 0!==i.removeListener&&this.emit("removeListener",e,o||t)}return this},EventEmitter.prototype.off=EventEmitter.prototype.removeListener,EventEmitter.prototype.removeAllListeners=function removeAllListeners(e){var t,n,i;if(void 0===(n=this._events))return this;if(void 0===n.removeListener)return 0===arguments.length?(this._events=Object.create(null),this._eventsCount=0):void 0!==n[e]&&(0==--this._eventsCount?this._events=Object.create(null):delete n[e]),this;if(0===arguments.length){var r,s=Object.keys(n);for(i=0;i<s.length;++i)"removeListener"!==(r=s[i])&&this.removeAllListeners(r);return this.removeAllListeners("removeListener"),this._events=Object.create(null),this._eventsCount=0,this}if("function"==typeof(t=n[e]))this.removeListener(e,t);else if(void 0!==t)for(i=t.length-1;i>=0;i--)this.removeListener(e,t[i]);return this},EventEmitter.prototype.listeners=function listeners(e){return _listeners(this,e,!0)},EventEmitter.prototype.rawListeners=function rawListeners(e){return _listeners(this,e,!1)},EventEmitter.listenerCount=function(e,t){return"function"==typeof e.listenerCount?e.listenerCount(t):listenerCount.call(e,t)},EventEmitter.prototype.listenerCount=listenerCount,EventEmitter.prototype.eventNames=function eventNames(){return this._eventsCount>0?t(this._events):[]}}},t={};function __webpack_require__(n){var i=t[n];if(void 0!==i)return i.exports;var r=t[n]={exports:{}};return e[n].call(r.exports,r,r.exports,__webpack_require__),r.exports}__webpack_require__.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return __webpack_require__.d(t,{a:t}),t},__webpack_require__.d=(e,t)=>{for(var n in t)__webpack_require__.o(t,n)&&!__webpack_require__.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},__webpack_require__.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=__webpack_require__(187),t=__webpack_require__.n(e),n=__webpack_require__(269),i=__webpack_require__.n(n);class ExtensionProvider extends(i()){doSend(e,t,n,i){if(!i&&("eth_chainId"===e||"net_version"===e)){const n={jsonrpc:"2.0",id:this.nextId++,method:e,params:t,__extensionConnecting:!0};return new Promise(((t,i)=>{this.promises[n.id]={resolve:t,reject:i,method:e},this.connection.send(n)}))}return super.doSend(e,t,n,i)}}class Connection extends(t()){constructor(){super(),window.addEventListener("message",(e=>{if(e&&e.source===window&&e.data){const{type:t}=e.data;"eth:payload"===t&&this.emit("payload",e.data.payload),"eth:event"===t&&this.emit(e.data.event,...e.data.args)}})),setTimeout((()=>this.emit("connect")),0)}send(e){window.postMessage({type:"eth:send",payload:e},window.location.origin)}}let r,s=window.localStorage.getItem("__frameAppearAsMM__");try{s=JSON.parse(s)}catch(e){s=!1}if(s){class MetaMaskProvider extends ExtensionProvider{}try{r=new MetaMaskProvider(new Connection),r.isMetaMask=!0,r._metamask={isUnlocked:()=>!0},r.setMaxListeners(0)}catch(e){console.error("Frame Error:",e)}}else{class FrameProvider extends ExtensionProvider{}try{r=new FrameProvider(new Connection),r.isFrame=!0,r.setMaxListeners(0)}catch(e){console.error("Frame Error:",e)}}window.ethereum=r,function shimWeb3(e,t){let n=!1;if(!window.web3){const i=t?"__isMetaMaskShim__":"__isFrameShim__",r={currentProvider:e};Object.defineProperty(r,i,{value:!0,enumerable:!0,configurable:!1,writable:!1});const s=new Proxy(r,{get:(e,t,...r)=>("currentProvider"!==t||n?"currentProvider"!==t&&t!==i&&console.error(`You are requesting the "${t}" property of window.web3 which no longer supported; use window.ethereum instead.`):(n=!0,console.warn("You are accessing the Frame window.web3.currentProvider shim. This property is deprecated; use window.ethereum instead.")),Reflect.get(e,t,...r)),set:(...e)=>(console.warn("You are accessing the Frame window.web3 shim. This object is deprecated; use window.ethereum instead."),Reflect.set(...e))});Object.defineProperty(window,"web3",{value:s,enumerable:!1,configurable:!0,writable:!0})}}(window.ethereum,s);const o={getChainId:async()=>({chainId:await window.ethereum.doSend("eth_chainId",[],void 0,!1)})};document.addEventListener("readystatechange",(e=>{"interactive"===document.readyState&&(window.ethereum=r)})),window.addEventListener("message",(async e=>{if(e&&e.source===window&&e.data&&"embedded:action"===e.data.type&&e.data.action){const t=e.data.action;if(o[t.type]){const e={method:"embedded_action_res",params:[t,await o[t.type](t)]};window.postMessage({type:"eth:send",payload:e},window.location.origin)}else console.warn(`Could not find embedded action ${t.type}`)}}))})()})();</script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script>window.__capturedErrors = [];
+window.onerror = function (message, url, line, column, error) { __capturedErrors.push(error); };
+window.onunhandledrejection = function(evt) { __capturedErrors.push(evt.reason); }
+</script>
+<meta name="sentry-config" data-js-dsn="https://7cd38b0eb2b348b39a6002cc768f91c7@errors.stripe.com/376" data-js-release="0d6bf4ff426d22c7e253a0a609ed807d825953cd" data-js-environment="production" data-js-project="mkt">
+
+
+
+    <template class="TrackingSandboxTemplate"></template>
+
+
+
+    <template id="source-attribution-loader"></template>
+
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+      <!-- <link rel="shortcut icon" href="https://link.co/favicon.ico">
+<link rel="apple-touch-icon" href="https://link.co/app-icon.png">
+<link rel="icon" href="https://link.co/app-icon.png"> -->
+<link rel="icon" href="https://dwaiqip6muoif.cloudfront.net/wp-content/uploads/2022/12/cropped-Stably-favicon-32x32.png" sizes="32x32" />
+<link rel="icon" href="https://dwaiqip6muoif.cloudfront.net/wp-content/uploads/2022/12/cropped-Stably-favicon-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://dwaiqip6muoif.cloudfront.net/wp-content/uploads/2022/12/cropped-Stably-favicon-180x180.png" />
+<meta name="msapplication-TileImage" content="https://www.stably.io/wp-content/uploads/2022/12/cropped-Stably-favicon-270x270.png" />
+
+
+    <meta name="description" content="Stably is an easy and secure way to buy stablecoins.">
+
+    <title>Stably: Simple stablecoin payments</title>
+
+
+    <meta name="format-detection" content="telephone=no">
+
+
+
+
+      <meta name="facebook-domain-verification" content="zvsnguqc5l0xz3at5o9beubpl46dv8">
+      <meta property="og:title" content="Link: Simple, secure one-click payments">
+      <meta property="og:description" content="Stablyis an easy and secure way to pay in one click on tens of thousands of sites.">
+      <meta property="og:image" name="og:image" content="https://images.ctfassets.net/fzn2n1nzq965/5IG9GndiqhK9sFAy6U6meO/31bca48ef77325e59b149056debd00b7/link-social-card.jpg?q=80">
+
+      <meta name="og:url" content="https://stripe.com/">
+
+
+
+      <meta name="twitter:site" content="@stripe">
+      <meta name="twitter:image" content="https://images.ctfassets.net/fzn2n1nzq965/5IG9GndiqhK9sFAy6U6meO/31bca48ef77325e59b149056debd00b7/link-social-card.jpg?q=80">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="Link: Simple, secure one-click payments">
+      <meta name="twitter:description" content="Stablyis an easy and secure way to pay in one click on tens of thousands of sites.">
+
+
+
+
+
+
+
+      <meta name="link:notification-path" data-js-controller="LinkNotificationCenterLoader" data-js-notification-path="https://link.co/cookie-notifications">
+
+
+
+
+
+    <link rel="preconnect" href="https://q.stripe.com/" crossorigin="">
+<link rel="dns-prefetch" href="https://q.stripe.com/">
+    <link rel="preconnect" href="https://images.ctfassets.net/" crossorigin="">
+<link rel="dns-prefetch" href="https://images.ctfassets.net/">
+    <link rel="preconnect" href="https://assets.ctfassets.net/" crossorigin="">
+<link rel="dns-prefetch" href="https://assets.ctfassets.net/">
+
+    <script>new MutationObserver(e=>{for(const d of e)if(d.addedNodes)for(const e of d.addedNodes)e instanceof HTMLLinkElement&&void 0!==e.dataset.jsLazyStyle&&e.addEventListener("load",function(){this.media="all"})}).observe(document.head,{childList:!0}),document.addEventListener("DOMContentLoaded",()=>{for(const e of document.querySelectorAll("link[data-js-lazy-style]"))"all"!==e.media&&(e.media="all")});
+</script>
+    <link rel="preconnect" href="https://b.stripecdn.com/" crossorigin="">
+<link rel="dns-prefetch" href="https://b.stripecdn.com/">
+
+              <link rel="stylesheet" href="./Page-c3d250c9efaf916781e1.css">
+
+
+              <link rel="stylesheet" href="./SiteHeader-8a57a9dab909d3343fb9.css">
+
+
+              <link rel="stylesheet" href="./Logo-e2b1bb0f279608f430b4.css">
+
+
+              <link rel="stylesheet" href="./TextLink-74ba3bbb2f005f335e9e.css">
+
+
+              <link rel="stylesheet" href="./CtaButton-50d31b0b5ada653e1c85.css">
+
+
+              <link rel="stylesheet" href="./Copy-adfd734333c1f6d29b5d.css">
+
+
+              <link rel="stylesheet" href="./CopyTitle-738c5a0d1c298f582bc2.css">
+
+
+              <link rel="stylesheet" href="./Section-f447c9b0ba971a6de978.css">
+
+
+              <link rel="stylesheet" href="./PhoneAnimation-8d42735181164c1ffabd.css">
+
+
+              <link rel="stylesheet" href="./Picture-3f0067e6b392244c9bda.css">
+
+
+              <link rel="stylesheet" href="./Spinner-19335e782230b3bf0aaf.css">
+
+
+              <link rel="stylesheet" href="./CopyBody-100372bde286ed901286.css">
+
+
+              <link rel="stylesheet" href="./ColumnLayout-9457a669f0085df18816.css">
+
+
+              <link rel="stylesheet" href="./FeatureIcon-e3b0c44298fc1c149afb.css">
+
+
+              <link rel="stylesheet" href="./RowLayout-464ad85cf4a8e6226ba1.css">
+
+
+              <link rel="stylesheet" href="./StoryCard-cea11ee7f242759d1f03.css">
+
+
+              <link rel="stylesheet" href="./StoryCardBackground-58158919b889c161fe0b.css">
+
+
+              <link rel="stylesheet" href="./UserLogo-db4fd9efb1cd1e6216f8.css">
+
+
+              <link rel="stylesheet" href="./Link-d2d3aeca535307db3b84.css">
+
+
+              <link rel="stylesheet" href="./Card-42091a6bb05b523218eb.css">
+
+
+              <link rel="stylesheet" href="./FaqItem-cdfc4c4eb98930e365b4.css">
+
+
+              <link rel="stylesheet" href="./FaqList-b4fe01e7ca4e08f0e861.css">
+
+
+              <link rel="stylesheet" href="./SiteFooter-1c5e3f8199305651d4f4.css">
+
+
+              <link rel="stylesheet" href="./LocaleControlCountryPicker-fe1412fd4768f89dbf57.css">
+
+
+              <link rel="stylesheet" href="./Flag-d53bc57e1c1caa780edf.css">
+
+
+              <link rel="stylesheet" href="./LocaleControl-4f9017968079a7751cbc.css">
+
+
+              <link rel="stylesheet" href="./LocaleControlLanguagePicker-f05cb15ed58020384921.css">
+
+
+              <link rel="stylesheet" href="./Page-39238d9f5bce00a0b0a5.css">
+
+
+              <link rel="stylesheet" href="./Initializer-e6584dc6db1064b1495d.css">
+
+
+        <script type="application/json" data-js-script-registry="">
+          [{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/PhoneAnimation-0e76bc12.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/LocaleControl-087e75f6.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/Loader-007b1f9c.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/Page-b758497a.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/Sentry-aa688313.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/EnforceSameSiteLaxOnCookies-4dd41319.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/Initializer-31d4cc5b.js"},{"critical":true,"path":"https://b.stripecdn.com/mkt-statics-srv/assets/LoaderScript-ec8a4f45.js"}]
+        </script>
+
+
+        <script type="module" src="./Bootstrapper-1092143a.js"></script>
+        <script type="text/javascript" src="./Prelude-101b3b47.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="chrome-extension://fleenceagaplaefnklabikkmocalkcpo/assets/fonts/webfonts.css"></head>
+  <body class="MktBody theme--Light LinkBody LinkHomepage" data-new-gr-c-s-check-loaded="14.1095.0" data-gr-ext-installed="" style="
+    background: radial-gradient(241.49% 92.92% at 85.26% 77.98%, #fff 63%, #b165ebbd 81.25%, #fdff67 95.64%);
+">
+    <div id="MktContent">
+      <header class="
+    LinkSiteHeader
+    LinkSiteHeader--excludeButton
+  ">
+  <a class="
+    LinkTextLink
+    LinkLogo
+  " href="https://link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Logo"><svg version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1246.000000 570.000000" preserveAspectRatio="xMidYMid meet" style="
+    width: 186%;
+">
+
+<g transform="translate(0.000000,570.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M2395 4968 c-47 -25 -45 35 -45 -1378 0 -890 4 -1356 11 -1396 30
+-171 94 -299 204 -409 121 -122 271 -190 475 -215 118 -14 502 -13 535 2 40
+18 47 66 43 293 -4 269 13 250 -226 258 -246 7 -311 31 -365 131 -22 41 -22
+43 -25 686 -2 600 -1 646 15 657 12 10 79 13 254 13 224 0 238 1 263 21 l26
+20 0 234 c0 214 -2 235 -19 256 -19 24 -22 24 -264 29 -186 4 -248 8 -260 19
+-15 12 -17 50 -17 358 0 365 -4 398 -48 422 -28 15 -530 14 -557 -1z"></path>
+<path d="M6457 4969 c-49 -28 -47 31 -47 -1699 0 -1769 -3 -1674 57 -1699 23
+-9 196 -11 749 -8 619 3 728 6 785 20 327 80 510 268 576 592 16 81 18 148 18
+695 0 636 -2 671 -47 810 -51 161 -166 309 -300 388 -142 84 -279 111 -558
+112 -226 0 -275 -8 -389 -61 -87 -40 -143 -88 -187 -159 -20 -33 -41 -57 -45
+-54 -5 3 -9 235 -9 515 l0 510 -25 24 -24 25 -268 0 c-172 0 -275 -4 -286 -11z
+m1308 -1364 c72 -19 118 -53 148 -108 22 -42 22 -44 25 -601 3 -626 2 -635
+-63 -701 -61 -60 -102 -67 -434 -73 -318 -5 -364 0 -375 41 -10 38 -6 1087 4
+1161 23 153 106 254 237 285 68 16 392 13 458 -4z"></path>
+<path d="M8979 4961 l-24 -19 -3 -1660 -2 -1661 24 -28 24 -28 249 -3 c136 -2
+263 0 281 3 23 4 39 16 52 38 20 31 20 60 18 1680 l-3 1649 -28 24 -28 24
+-268 0 c-250 0 -270 -1 -292 -19z"></path>
+<path d="M633 4155 c-227 -41 -385 -147 -463 -311 -43 -90 -70 -225 -70 -354
+0 -206 51 -340 175 -464 95 -96 175 -147 574 -367 427 -235 471 -273 471 -404
+0 -51 -3 -60 -33 -90 -63 -63 -84 -65 -623 -65 -282 0 -493 -4 -508 -10 -17
+-6 -28 -21 -35 -47 -14 -49 -14 -367 0 -415 19 -70 3 -68 611 -68 301 0 583 5
+633 10 317 36 512 173 592 415 21 67 26 104 30 225 8 250 -37 383 -177 520
+-87 86 -136 118 -535 352 -365 214 -406 241 -449 288 -92 102 -57 221 74 249
+32 7 203 11 471 11 l420 0 24 25 c25 24 25 24 25 235 0 220 -6 259 -45 274 -9
+3 -258 6 -553 5 -394 -1 -556 -4 -609 -14z"></path>
+<path d="M4520 4151 c-299 -63 -495 -249 -571 -541 -22 -82 -23 -103 -27 -680
+-4 -741 2 -802 99 -990 93 -180 267 -306 489 -355 118 -25 405 -32 510 -11
+160 32 289 112 348 218 15 26 30 48 34 48 3 0 8 -52 10 -115 5 -171 -18 -160
+324 -160 l276 0 24 28 24 28 0 1240 c0 1320 1 1285 -45 1303 -9 3 -330 6 -713
+5 -631 0 -705 -2 -782 -18z m875 -557 c14 -15 15 -75 13 -613 -3 -553 -4 -600
+-22 -646 -38 -103 -112 -172 -210 -197 -65 -17 -375 -17 -432 0 -49 14 -101
+48 -125 82 -10 14 -26 53 -34 87 -14 54 -16 136 -13 590 l3 528 30 60 c33 65
+65 90 144 111 31 9 140 13 338 13 255 1 294 -1 308 -15z"></path>
+<path d="M9967 4152 c-10 -10 -17 -28 -17 -40 0 -38 560 -2135 585 -2189 34
+-75 106 -148 183 -184 51 -25 83 -33 149 -37 l85 -5 -7 -36 c-10 -55 -61 -177
+-94 -224 -88 -126 -188 -161 -501 -173 -230 -9 -214 9 -218 -262 -4 -224 3
+-271 41 -291 18 -10 93 -12 313 -9 257 4 298 7 369 26 294 80 506 296 638 652
+36 96 687 2678 687 2723 0 13 -10 33 -23 45 -23 21 -30 22 -290 22 -288 0
+-308 -3 -333 -52 -8 -16 -113 -456 -234 -979 -120 -523 -221 -954 -225 -957
+-3 -3 -9 -1 -14 4 -4 5 -106 432 -226 949 -120 517 -225 955 -233 973 -27 59
+-41 62 -345 62 -253 0 -275 -1 -290 -18z"></path>
+</g>
+</svg></a>
+
+  <nav>
+    <a class="
+    LinkCtaButton
+
+    LinkCtaButton--variantLink
+  " href="https://app.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Sign up (header)"> For Partners
+  </a>
+    <a class="
+    LinkCtaButton
+
+    LinkCtaButton--variantLink
+  " href="https://app.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Sign up (header)"> Resources
+  </a>
+  <a class="
+    LinkCtaButton
+
+    LinkCtaButton--variantLink
+  " href="https://app.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Sign up (header)">Buy & Sell
+  </a>
+
+
+    <!-- <a class="
+    LinkCtaButton
+    LinkSiteHeader__button
+
+  " href="https://app.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Log in (header)">Log in</a> -->
+  </nav>
+</header>
+
+  <section class="
+    LinkSection
+    LinkHomepage__hero
+
+
+  ">
+  <div class="LinkSection__content">
+    <section class="
+    LinkCopy
+    LinkCopy--variantHero
+
+  " style="--copyColumnCountMax: 7">
+  <header class="LinkCopy__header">
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantHero
+    LinkCopy__title
+  ">Simple stablecoin payments</h1>
+
+  </header>
+
+
+
+
+    <footer class="LinkCopy__footer">
+      <div class="LinkCopy__ctaContainer"><a class="
+    LinkCtaButton
+
+
+  " href="https://ramp.stably.io/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Log in (hero)" style="background: #00003f;">Buy & Sell</a></div>
+
+    </footer>
+
+</section>
+  </div>
+</section>
+
+  <section class="
+    LinkSection
+
+
+
+  ">
+  <div class="LinkSection__content">
+    <div class="LinkColumnLayout" data-columns="1,1">
+  <figure class="
+    LinkPhoneAnimation
+
+
+  " data-js-target="" data-js-controller="LinkPhoneAnimation" aria-hidden="true">
+  <div class="LinkPhoneAnimation__phone">
+    <div class="LinkPhoneAnimation__checkoutScreen" data-js-target="LinkPhoneAnimation.checkoutScreen">
+      <div class="LinkPhoneAnimation__screenContent">
+        <div class="LinkPhoneAnimation__nav">
+          <svg class="LinkPhoneAnimation__navArrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M2.20002 4.14064H9.31384C9.65303 4.14064 9.92799 4.41561 9.92799 4.75479C9.92799 5.09398 9.65303 5.36895 9.31384 5.36895H2.20002L5.01978 8.18871C5.25984 8.42877 5.25984 8.81799 5.01978 9.05806C4.77972 9.29812 4.3905 9.29812 4.15043 9.05806L0.281443 5.18907C0.0416022 4.94922 0.0416022 4.56036 0.281443 4.32052L4.15043 0.451532C4.3905 0.211469 4.77972 0.211469 5.01978 0.451532C5.25984 0.691595 5.25984 1.08081 5.01978 1.32088L2.20002 4.14064Z"></path>
+          </svg>
+        </div>
+        <div class="LinkPhoneAnimation__product" data-js-target="LinkPhoneAnimation.product">
+          <div class="LinkPhoneAnimation__productPreview">
+            <picture class="
+    Picture
+
+
+    LinkPhoneAnimation__productThumbnail
+  ">
+
+
+
+
+      <source srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/5VOOnf8FDja7soQarJk8Rp/446ffedd36a4179a610ef485c6e05bd9/link-powdur-mobile.jpg?q=80&amp;fm=webp&amp;w=284 2x,
+          https://images.ctfassets.net/fzn2n1nzq965/5VOOnf8FDja7soQarJk8Rp/446ffedd36a4179a610ef485c6e05bd9/link-powdur-mobile.jpg?q=80&amp;fm=webp&amp;w=142
+        " type="image/webp">
+
+
+
+  <img class="Picture__image " src="./link-powdur-mobile.jpg" srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/5VOOnf8FDja7soQarJk8Rp/446ffedd36a4179a610ef485c6e05bd9/link-powdur-mobile.jpg?q=80&amp;w=284&amp;fm=jpg 2x,
+          https://images.ctfassets.net/fzn2n1nzq965/5VOOnf8FDja7soQarJk8Rp/446ffedd36a4179a610ef485c6e05bd9/link-powdur-mobile.jpg?q=80&amp;w=142&amp;fm=jpg
+        " alt="" width="142" height="142" loading="lazy">
+</picture>
+            <div class="LinkPhoneAnimation__productQuantity">1 item</div>
+          </div>
+          <div class="LinkPhoneAnimation__productPrice">
+            <div class="LinkPhoneAnimation__productPriceLabel">Pay</div>
+            <div class="LinkPhoneAnimation__productPriceAmount">$42.08</div>
+          </div>
+        </div>
+        <div class="LinkPhoneAnimation__formContainer">
+          <div class="LinkPhoneAnimation__form" data-js-target="LinkPhoneAnimation.form">
+            <div class="LinkPhoneAnimation__field">
+              <div class="LinkPhoneAnimation__fieldLabel" data-js-target="LinkPhoneAnimation.emailLabel">Email</div>
+              <div class="LinkPhoneAnimation__fieldInput" data-js-target-list="LinkPhoneAnimation.secondaryFormElements" data-js-target="LinkPhoneAnimation.emailInput">
+                <span class="LinkPhoneAnimation__emailFieldInput" data-js-target="LinkPhoneAnimation.emailInputText"><span>j</span><span>a</span><span>n</span><span>e</span><span>.</span><span>d</span><span>i</span><span>a</span><span>z</span><span>@</span><span>e</span><span>x</span><span>a</span><span>m</span><span>p</span><span>l</span><span>e</span><span>.</span><span>c</span><span>o</span><span>m</span></span>
+                <svg class="Spinner LinkPhoneAnimation__fieldInputSpinner" data-js-target="LinkPhoneAnimation.emailSpinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><g class="Spinner__circle" fill="none" fill-rule="evenodd"><circle cx="8" cy="8" r="8"></circle><path fill="currentColor" fill-rule="nonzero" d="M8 16a.62.62 0 1 1 0-1.24A6.76 6.76 0 1 0 2.76 3.71a.62.62 0 1 1-.96-.77A7.99 7.99 0 0 1 16 8a8 8 0 0 1-8 8z"></path></g></svg>
+              </div>
+            </div>
+
+            <div class="LinkPhoneAnimation__field" data-js-target-list="LinkPhoneAnimation.additionalFields">
+              <div class="LinkPhoneAnimation__fieldLabel">Card information</div>
+              <div class="LinkPhoneAnimation__fieldSet">
+                <div class="LinkPhoneAnimation__fieldSelect LinkPhoneAnimation__fieldInput">
+                  <span class="LinkPhoneAnimation__fieldPlaceholder">1234 1234 1234 1234</span>
+                  <div class="LinkPhoneAnimation__fieldCardContainer">
+                    <svg width="24" height="16" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21.9574 0H2.04255C0.914482 0 0 0.924315 0 2.06452V13.9355C0 15.0757 0.914482 16 2.04255 16H21.9574C23.0855 16 24 15.0757 24 13.9355V2.06452C24 0.924315 23.0855 0 21.9574 0Z" fill="white"></path>
+                      <path d="M2.04255 0.25H21.9574C22.9449 0.25 23.75 1.05986 23.75 2.06452V13.9355C23.75 14.9401 22.9449 15.75 21.9574 15.75H2.04255C1.05507 15.75 0.25 14.9401 0.25 13.9355V2.06452C0.25 1.05986 1.05507 0.25 2.04255 0.25Z" stroke="black" stroke-opacity="0.2" stroke-width="0.5"></path>
+                      <path d="M2.5917 5.84716C2.05743 5.55098 1.44767 5.31276 0.76593 5.14745L0.794526 5.01872H3.58974C3.96862 5.03214 4.27605 5.14736 4.37609 5.55429L4.98356 8.48165L5.16966 9.36333L6.87109 5.01872H8.70818L5.97738 11.3833H4.14019L2.5917 5.84716ZM10.0595 11.39H8.32218L9.40884 5.01872H11.1461L10.0595 11.39ZM16.3575 5.17448L16.1213 6.55028L15.9641 6.48263C15.6498 6.35381 15.2348 6.22507 14.67 6.23867C13.984 6.23867 13.6764 6.51641 13.6693 6.78757C13.6693 7.08585 14.0414 7.28242 14.6491 7.57394C15.65 8.02807 16.1143 8.58381 16.1074 9.3091C16.0933 10.6309 14.9065 11.485 13.0836 11.485C12.3042 11.4781 11.5535 11.3219 11.146 11.1459L11.3891 9.71566L11.6179 9.81746C12.1827 10.0549 12.5543 10.1564 13.248 10.1564C13.7482 10.1564 14.2845 9.95962 14.2913 9.53279C14.2913 9.25487 14.0628 9.05136 13.3907 8.73957C12.733 8.43445 11.8538 7.92618 11.868 7.01108C11.8754 5.77076 13.0836 4.90323 14.7993 4.90323C15.4713 4.90323 16.0149 5.04557 16.3575 5.17448ZM18.6666 9.13289H20.1107C20.0392 8.81434 19.7102 7.28927 19.7102 7.28927L19.5888 6.74028C19.503 6.97748 19.353 7.36386 19.3602 7.35025C19.3602 7.35025 18.8097 8.76687 18.6666 9.13289ZM20.8111 5.01872L22.2127 11.3899H20.6041C20.6041 11.3899 20.4467 10.6579 20.3968 10.4342H18.1662C18.1017 10.6036 17.8016 11.3899 17.8016 11.3899H15.9787L18.5593 5.54735C18.7381 5.13385 19.0529 5.01872 19.4673 5.01872H20.8111Z" fill="#1434CB"></path>
+                    </svg>
+                    <svg width="24" height="16" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22 0H2C0.89543 0 0 0.89543 0 2V14C0 15.1046 0.89543 16 2 16H22C23.1046 16 24 15.1046 24 14V2C24 0.89543 23.1046 0 22 0Z" fill="#252525"></path>
+                      <path d="M9 13C11.7614 13 14 10.7614 14 8C14 5.23858 11.7614 3 9 3C6.23858 3 4 5.23858 4 8C4 10.7614 6.23858 13 9 13Z" fill="#EB001B"></path>
+                      <path d="M15 13C17.7614 13 20 10.7614 20 8C20 5.23858 17.7614 3 15 3C12.2386 3 10 5.23858 10 8C10 10.7614 12.2386 13 15 13Z" fill="#F79E1B"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.99963C13.2144 4.91184 14 6.36418 14 8C14 9.63582 13.2144 11.0882 12 12.0004C10.7856 11.0882 10 9.63582 10 8C10 6.36418 10.7856 4.91184 12 3.99963Z" fill="#FF5F00"></path>
+                    </svg>
+                    <svg width="24" height="16" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22 0H2C0.89543 0 0 0.89543 0 2V14C0 15.1046 0.89543 16 2 16H22C23.1046 16 24 15.1046 24 14V2C24 0.89543 23.1046 0 22 0Z" fill="#016FD0"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M13.764 13.3939V7.69247L23.9116 7.70158V9.27647L22.7387 10.5299L23.9116 11.7948V13.4031H22.039L21.0438 12.3049L20.0557 13.4072L13.764 13.3939Z" fill="#FFFFFE"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M14.4418 12.7688V8.31992H18.2141V9.3448H15.6632V10.0405H18.1533V11.0483H15.6632V11.7316H18.2141V12.7688H14.4418Z" fill="#016FD0"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M18.1953 12.7688L20.2826 10.5418L18.1952 8.32001H19.8108L21.0863 9.73004L22.3654 8.32001H23.9116V8.35501L21.8687 10.5418L23.9116 12.7057V12.7688H22.3499L21.0518 11.3446L19.767 12.7688H18.1953Z" fill="#016FD0"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M14.2374 2.63196H16.6834L17.5426 4.58281V2.63196H20.5624L21.0832 4.09353L21.6057 2.63196H23.9116V8.33335H11.7251L14.2374 2.63196Z" fill="#FFFFFE"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M14.7005 3.25137L12.7264 7.69654H14.0803L14.4528 6.80638H16.4707L16.8429 7.69654H18.2304L16.2647 3.25137H14.7005ZM14.8701 5.80881L15.4621 4.39374L16.0536 5.80881H14.8701Z" fill="#016FD0"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M18.212 7.69572V3.25064L20.1151 3.25718L21.0944 5.98991L22.08 3.25064H23.9116V7.69572L22.733 7.70615V4.65281L21.6204 7.69572H20.5446L19.409 4.64238V7.69572H18.212Z" fill="#016FD0"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="LinkPhoneAnimation__fieldInputRow">
+                  <div class="LinkPhoneAnimation__fieldInput">
+                    <span class="LinkPhoneAnimation__fieldPlaceholder">MM / YY</span>
+                  </div>
+                  <div class="LinkPhoneAnimation__fieldInput">
+                    <span class="LinkPhoneAnimation__fieldPlaceholder">CVC</span>
+                    <svg width="25" height="16" viewBox="0 0 25 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd" d="M16.5181 1.5238H1.52381C0.822857 1.5238 0 2.33142 0 3.04761V14.4762C0 15.1924 0.822857 16 1.52381 16H20.5714C21.2724 16 22.0952 15.1924 22.0952 14.4762V8.73904C21.4534 9.31641 20.6607 9.69954 19.8095 9.8438V9.90476C19.8095 10.4076 19.5352 10.6667 19.0476 10.6667H2.28571C1.7981 10.6667 1.52381 10.4076 1.52381 9.90476V9.14285C1.52381 8.63999 1.7981 8.38095 2.28571 8.38095H15.6419C15.2021 7.89354 14.8728 7.31684 14.6766 6.69035C14.4804 6.06385 14.4219 5.40235 14.5051 4.75114C14.5883 4.09993 14.8113 3.47439 15.1587 2.91736C15.5061 2.36033 15.9699 1.88496 16.5181 1.5238V1.5238Z" fill="#565656"></path>
+                      <path opacity="0.3" fill-rule="evenodd" clip-rule="evenodd" d="M14.7352 3.80951H0V6.09522H14.5371C14.4091 5.32881 14.4773 4.54247 14.7352 3.80951Z" fill="#565656"></path>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M19.0476 10.6667C17.6331 10.6667 16.2766 10.1048 15.2764 9.10457C14.2762 8.10437 13.7143 6.74782 13.7143 5.33333C13.7143 3.91885 14.2762 2.56229 15.2764 1.5621C16.2766 0.561903 17.6331 0 19.0476 0C20.4621 0 21.8187 0.561903 22.8188 1.5621C23.819 2.56229 24.3809 3.91885 24.3809 5.33333C24.3809 6.74782 23.819 8.10437 22.8188 9.10457C21.8187 10.1048 20.4621 10.6667 19.0476 10.6667ZM16.9295 3.12381H16.3276L14.8571 3.87048V4.63238L16.0229 4.02286V7.54286H16.9371V3.12381H16.9295ZM18.6819 3.73333C19.1162 3.73333 19.4209 3.97714 19.4209 4.32762C19.4209 4.70857 19.0629 4.97524 18.5448 4.97524H18.3162V5.62286H18.5905C19.139 5.62286 19.5124 5.89714 19.5124 6.29333C19.5124 6.67429 19.1467 6.93333 18.6286 6.93333C18.2476 6.93333 17.8667 6.81143 17.4705 6.57524V7.33714C17.8971 7.52 18.3238 7.61905 18.7429 7.61905C19.7409 7.61905 20.4267 7.10857 20.4267 6.36952C20.4267 5.85143 20.1067 5.43238 19.5733 5.26476C20.0305 5.11238 20.3276 4.70857 20.3276 4.25143C20.3276 3.53524 19.6952 3.04762 18.7809 3.04762C18.3688 3.05219 17.9619 3.14032 17.5848 3.30667V4.05333C17.9505 3.84762 18.3238 3.73333 18.6819 3.73333ZM21.9733 5.39429C22.5295 5.39429 22.9181 5.7219 22.9181 6.14857C22.9181 6.59809 22.5295 6.91048 21.9733 6.91048C21.6381 6.91048 21.2876 6.80381 20.9295 6.58286V7.36762C21.3029 7.53524 21.6838 7.61905 22.0571 7.61905C22.2552 7.61905 22.4381 7.58857 22.6133 7.54286C23.0095 6.89524 23.2381 6.14857 23.2381 5.34857L23.2229 5.02857C22.9396 4.86089 22.6148 4.7764 22.2857 4.78476C22.1486 4.78476 22.0038 4.79238 21.8514 4.81524V3.82476H22.9486C22.8534 3.58089 22.7361 3.34626 22.5981 3.12381H21.059V5.52381C21.3638 5.44762 21.6686 5.39429 21.9733 5.39429Z" fill="#565656"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="LinkPhoneAnimation__field" data-js-target-list="LinkPhoneAnimation.additionalFields">
+              <div class="LinkPhoneAnimation__fieldLabel">Shipping address</div>
+              <div class="LinkPhoneAnimation__fieldSet">
+                <div class="LinkPhoneAnimation__fieldSelect LinkPhoneAnimation__fieldInput">
+                  United States
+                  <svg class="LinkPhoneAnimation__fieldSelectArrow" width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.1934 0.866846C10.4866 0.573682 10.9619 0.573682 11.255 0.866846C11.5482 1.16001 11.5482 1.63532 11.255 1.92849L6.53023 6.65328C6.23734 6.94618 5.76247 6.94618 5.46957 6.65328L0.744776 1.92849C0.451611 1.63532 0.451611 1.16001 0.744776 0.866846C1.03794 0.573682 1.51325 0.573682 1.80642 0.866846L5.9999 5.06033L10.1934 0.866846Z"></path></svg>
+                </div>
+                <div class="LinkPhoneAnimation__fieldInput">
+                  <span class="LinkPhoneAnimation__fieldPlaceholder">Name</span>
+                </div>
+                <div class="LinkPhoneAnimation__fieldInput">
+                  <span class="LinkPhoneAnimation__fieldPlaceholder">Address line 1</span>
+                </div>
+                <div class="LinkPhoneAnimation__fieldInput">
+                  <span class="LinkPhoneAnimation__fieldPlaceholder">Address line 2 (optional)</span>
+                </div>
+                <div class="LinkPhoneAnimation__fieldInputRow">
+                  <div class="LinkPhoneAnimation__fieldInput">
+                    <span class="LinkPhoneAnimation__fieldPlaceholder">City</span>
+                  </div>
+                  <div class="LinkPhoneAnimation__fieldInput">
+                    <span class="LinkPhoneAnimation__fieldPlaceholder">ZIP</span>
+                  </div>
+                </div>
+                <div class="LinkPhoneAnimation__fieldSelect LinkPhoneAnimation__fieldInput">
+                  <span class="LinkPhoneAnimation__fieldPlaceholder">State</span>
+                  <svg class="LinkPhoneAnimation__fieldSelectArrow" width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.1934 0.866846C10.4866 0.573682 10.9619 0.573682 11.255 0.866846C11.5482 1.16001 11.5482 1.63532 11.255 1.92849L6.53023 6.65328C6.23734 6.94618 5.76247 6.94618 5.46957 6.65328L0.744776 1.92849C0.451611 1.63532 0.451611 1.16001 0.744776 0.866846C1.03794 0.573682 1.51325 0.573682 1.80642 0.866846L5.9999 5.06033L10.1934 0.866846Z"></path></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="LinkPhoneAnimation__checkout" data-js-target="LinkPhoneAnimation.checkout">
+            <div class="LinkPhoneAnimation__panel">
+              <div class="LinkPhoneAnimation__panelField">
+                <div class="LinkPhoneAnimation__panelFieldLabel"></div>
+                <div class="LinkPhoneAnimation__panelFieldValue" data-js-target="LinkPhoneAnimation.panelEmail">
+                  <b>jane.diaz@example.com</b>
+                </div>
+              </div>
+              <div class="LinkPhoneAnimation__panelPromptContainer">
+                <div class="LinkPhoneAnimation__panelPrompt" data-js-target="LinkPhoneAnimation.panelPrompt">
+                  <div class="LinkPhoneAnimation__panelFieldContent">
+                    <div class="LinkPhoneAnimation__panelFieldTitle">
+                      Use your saved information with Link
+                    </div>
+                    <div class="LinkPhoneAnimation__panelFieldBody">
+                      Enter the code sent to <b>(•••) ••• ••35</b> to securely use your saved information.
+                    </div>
+                  </div>
+                  <div class="LinkPhoneAnimation__panelSmsContainer">
+                    <div class="LinkPhoneAnimation__panelSmsField">
+                      <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path opacity="0.3" fill-rule="evenodd" clip-rule="evenodd" d="M6.32362 4.58253C6.22847 4.58696 6.13968 4.59246 6.05602 4.5993C5.65388 4.63215 5.47953 4.68961 5.37496 4.7429C5.06666 4.89998 4.816 5.15064 4.65891 5.45894C4.60563 5.56351 4.54817 5.73786 4.51531 6.14001C4.48128 6.55649 4.48033 7.1 4.48033 7.92321V15.1325C4.48033 15.9557 4.48128 16.4992 4.51531 16.9157C4.54817 17.3179 4.60563 17.4922 4.65891 17.5968C4.816 17.9051 5.06666 18.1558 5.37496 18.3128C5.47953 18.3661 5.65388 18.4236 6.05602 18.4564C6.47251 18.4905 7.01601 18.4914 7.83922 18.4914H8.90423C9.72744 18.4914 10.2709 18.4905 10.6874 18.4564C11.0896 18.4236 11.2639 18.3661 11.3685 18.3128C11.6768 18.1558 11.9275 17.9051 12.0845 17.5968C12.1378 17.4922 12.1953 17.3179 12.2281 16.9157C12.2622 16.4992 12.2631 15.9557 12.2631 15.1325V7.9232C12.2631 7.09999 12.2622 6.55649 12.2281 6.14001C12.1953 5.73786 12.1378 5.56351 12.0845 5.45894C11.9275 5.15064 11.6768 4.89998 11.3685 4.7429C11.2639 4.68961 11.0896 4.63215 10.6874 4.5993C10.6038 4.59246 10.515 4.58696 10.4198 4.58253V5.07634C10.4198 5.52879 10.053 5.89558 9.60059 5.89558H7.14286C6.69041 5.89558 6.32362 5.52879 6.32362 5.07634V4.58253ZM3.25146 7.92321C3.25146 6.31734 3.25146 5.51441 3.56399 4.90105C3.83889 4.36152 4.27754 3.92287 4.81706 3.64797C5.43042 3.33545 6.23336 3.33545 7.83922 3.33545H8.90424C10.5101 3.33545 11.313 3.33545 11.9264 3.64797C12.4659 3.92287 12.9046 4.36152 13.1795 4.90105C13.492 5.51441 13.492 6.31734 13.492 7.9232V15.1325C13.492 16.7384 13.492 17.5413 13.1795 18.1547C12.9046 18.6942 12.4659 19.1329 11.9264 19.4078C11.313 19.7203 10.5101 19.7203 8.90423 19.7203H7.83922C6.23335 19.7203 5.43042 19.7203 4.81706 19.4078C4.27754 19.1329 3.83889 18.6942 3.56399 18.1547C3.25146 17.5413 3.25146 16.7384 3.25146 15.1325V7.92321Z" fill="black"></path>
+                        <rect opacity="0.2" x="6.73315" y="16.4434" width="3.27697" height="0.819242" rx="0.409621" fill="black"></rect>
+                        <circle cx="12.4677" cy="4.1545" r="3.27697" fill="#0055FF" stroke="white" stroke-width="1.63848"></circle>
+                      </svg>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">4</div>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">2</div>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">4</div>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">2</div>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">4</div>
+                      <div class="LinkPhoneAnimation__panelSmsInput" data-js-target-list="LinkPhoneAnimation.smsInputs">2</div>
+                      <svg class="LinkPhoneAnimation__panelSmsCheck" data-js-target="LinkPhoneAnimation.smsCheck" width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M5.10551 9.12915L1.00558 5.06695C0.685642 4.74434 0.685642 4.22129 1.00558 3.89868C1.32551 3.57608 1.84422 3.57608 2.16416 3.89868L5.68163 7.3599L12.4717 0.594495C12.7916 0.271887 13.3103 0.271887 13.6303 0.594495C13.9502 0.917104 13.9502 1.44016 13.6303 1.76276L6.25406 9.12536C5.93633 9.44234 5.42529 9.44402 5.10551 9.12915Z" fill="#0055FF"></path>
+                      </svg>
+                    </div>
+                    <div class="LinkPhoneAnimation__panelLink">
+                      Resend code
+                    </div>
+                  </div>
+                </div>
+
+                <div class="LinkPhoneAnimation__panelFieldSet">
+                  <div class="LinkPhoneAnimation__panelField LinkPhoneAnimation__panelField--isExpanded">
+                    <div class="LinkPhoneAnimation__panelFieldLabel">Ship to</div>
+                    <div class="LinkPhoneAnimation__panelFieldValue LinkPhoneAnimation__panelFieldValue--hasChange">
+                      Jane Diaz
+                      <div class="LinkPhoneAnimation__panelLink">Change</div>
+                      <div class="LinkPhoneAnimation__panelFieldSubvalue">
+                        27 Fredrick Ave<br>
+Brothers, OR 97712<br>
+United States
+                      </div>
+                    </div>
+                  </div>
+                  <div class="LinkPhoneAnimation__panelField">
+                    <div class="LinkPhoneAnimation__panelFieldLabel">Pay with</div>
+                    <div class="LinkPhoneAnimation__panelFieldValue LinkPhoneAnimation__panelFieldValue--hasChange">
+                      <div class="LinkPhoneAnimation__panelFieldCard">
+                        <svg width="21" height="14" viewBox="0 0 21 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18.6937 0.769043H2.38596C1.46222 0.769043 0.713379 1.52594 0.713379 2.45961V12.1804C0.713379 13.1141 1.46222 13.871 2.38596 13.871H18.6937C19.6174 13.871 20.3662 13.1141 20.3662 12.1804V2.45961C20.3662 1.52594 19.6174 0.769043 18.6937 0.769043Z" fill="white"></path>
+                          <path d="M2.38596 0.97376H18.6937C19.5023 0.97376 20.1615 1.63693 20.1615 2.45961V12.1804C20.1615 13.0031 19.5023 13.6662 18.6937 13.6662H2.38596C1.57734 13.6662 0.918096 13.0031 0.918096 12.1804V2.45961C0.918096 1.63693 1.57734 0.97376 2.38596 0.97376Z" stroke="black" stroke-opacity="0.2" stroke-width="0.409435"></path>
+                          <path d="M2.83589 5.55714C2.39839 5.3146 1.89908 5.11954 1.34082 4.98417L1.36424 4.87875H3.65315C3.9634 4.88974 4.21515 4.98409 4.29707 5.31731L4.79451 7.71443L4.9469 8.43642L6.34015 4.87875H7.84449L5.60832 10.0905H4.1039L2.83589 5.55714ZM8.95106 10.096H7.5284L8.41823 4.87875H9.84081L8.95106 10.096ZM14.1083 5.0063L13.9148 6.1329L13.7862 6.0775C13.5287 5.97201 13.1889 5.8666 12.7264 5.87774C12.1647 5.87774 11.9128 6.10517 11.907 6.32721C11.907 6.57146 12.2117 6.73243 12.7093 6.97114C13.529 7.34301 13.9092 7.7981 13.9035 8.39201C13.892 9.47436 12.9201 10.1738 11.4274 10.1738C10.7891 10.1682 10.1744 10.0402 9.84073 9.89609L10.0398 8.72493L10.2271 8.80829C10.6896 9.00275 10.994 9.08581 11.562 9.08581C11.9716 9.08581 12.4107 8.9247 12.4163 8.57518C12.4163 8.3476 12.2292 8.18096 11.6788 7.92564C11.1403 7.67579 10.4203 7.25958 10.432 6.51023C10.4381 5.49458 11.4274 4.78418 12.8323 4.78418C13.3826 4.78418 13.8277 4.90074 14.1083 5.0063ZM15.9991 8.24772H17.1816C17.1231 7.98687 16.8537 6.73803 16.8537 6.73803L16.7543 6.28848C16.6841 6.48272 16.5612 6.79911 16.5671 6.78797C16.5671 6.78797 16.1163 7.948 15.9991 8.24772ZM17.7552 4.87875L18.903 10.0959H17.5857C17.5857 10.0959 17.4568 9.49649 17.416 9.31332H15.5894C15.5366 9.452 15.2908 10.0959 15.2908 10.0959H13.7981L15.9112 5.31163C16.0576 4.97303 16.3155 4.87875 16.6548 4.87875H17.7552Z" fill="#171E6C"></path>
+                        </svg> •••• 4242
+                      </div>
+                      <div class="LinkPhoneAnimation__panelLink">Change</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="LinkPhoneAnimation__panelFooter">
+
+<a class="
+    LinkTextLink
+    LinkLogo LinkPhoneAnimation__panelFooterLogo
+  " href="https://link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Logo"
+  >
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1246.000000 570.000000" preserveAspectRatio="xMidYMid meet" style="
+    width: 186%;
+">
+
+<g transform="translate(0.000000,570.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M2395 4968 c-47 -25 -45 35 -45 -1378 0 -890 4 -1356 11 -1396 30
+-171 94 -299 204 -409 121 -122 271 -190 475 -215 118 -14 502 -13 535 2 40
+18 47 66 43 293 -4 269 13 250 -226 258 -246 7 -311 31 -365 131 -22 41 -22
+43 -25 686 -2 600 -1 646 15 657 12 10 79 13 254 13 224 0 238 1 263 21 l26
+20 0 234 c0 214 -2 235 -19 256 -19 24 -22 24 -264 29 -186 4 -248 8 -260 19
+-15 12 -17 50 -17 358 0 365 -4 398 -48 422 -28 15 -530 14 -557 -1z"></path>
+<path d="M6457 4969 c-49 -28 -47 31 -47 -1699 0 -1769 -3 -1674 57 -1699 23
+-9 196 -11 749 -8 619 3 728 6 785 20 327 80 510 268 576 592 16 81 18 148 18
+695 0 636 -2 671 -47 810 -51 161 -166 309 -300 388 -142 84 -279 111 -558
+112 -226 0 -275 -8 -389 -61 -87 -40 -143 -88 -187 -159 -20 -33 -41 -57 -45
+-54 -5 3 -9 235 -9 515 l0 510 -25 24 -24 25 -268 0 c-172 0 -275 -4 -286 -11z
+m1308 -1364 c72 -19 118 -53 148 -108 22 -42 22 -44 25 -601 3 -626 2 -635
+-63 -701 -61 -60 -102 -67 -434 -73 -318 -5 -364 0 -375 41 -10 38 -6 1087 4
+1161 23 153 106 254 237 285 68 16 392 13 458 -4z"></path>
+<path d="M8979 4961 l-24 -19 -3 -1660 -2 -1661 24 -28 24 -28 249 -3 c136 -2
+263 0 281 3 23 4 39 16 52 38 20 31 20 60 18 1680 l-3 1649 -28 24 -28 24
+-268 0 c-250 0 -270 -1 -292 -19z"></path>
+<path d="M633 4155 c-227 -41 -385 -147 -463 -311 -43 -90 -70 -225 -70 -354
+0 -206 51 -340 175 -464 95 -96 175 -147 574 -367 427 -235 471 -273 471 -404
+0 -51 -3 -60 -33 -90 -63 -63 -84 -65 -623 -65 -282 0 -493 -4 -508 -10 -17
+-6 -28 -21 -35 -47 -14 -49 -14 -367 0 -415 19 -70 3 -68 611 -68 301 0 583 5
+633 10 317 36 512 173 592 415 21 67 26 104 30 225 8 250 -37 383 -177 520
+-87 86 -136 118 -535 352 -365 214 -406 241 -449 288 -92 102 -57 221 74 249
+32 7 203 11 471 11 l420 0 24 25 c25 24 25 24 25 235 0 220 -6 259 -45 274 -9
+3 -258 6 -553 5 -394 -1 -556 -4 -609 -14z"></path>
+<path d="M4520 4151 c-299 -63 -495 -249 -571 -541 -22 -82 -23 -103 -27 -680
+-4 -741 2 -802 99 -990 93 -180 267 -306 489 -355 118 -25 405 -32 510 -11
+160 32 289 112 348 218 15 26 30 48 34 48 3 0 8 -52 10 -115 5 -171 -18 -160
+324 -160 l276 0 24 28 24 28 0 1240 c0 1320 1 1285 -45 1303 -9 3 -330 6 -713
+5 -631 0 -705 -2 -782 -18z m875 -557 c14 -15 15 -75 13 -613 -3 -553 -4 -600
+-22 -646 -38 -103 -112 -172 -210 -197 -65 -17 -375 -17 -432 0 -49 14 -101
+48 -125 82 -10 14 -26 53 -34 87 -14 54 -16 136 -13 590 l3 528 30 60 c33 65
+65 90 144 111 31 9 140 13 338 13 255 1 294 -1 308 -15z"></path>
+<path d="M9967 4152 c-10 -10 -17 -28 -17 -40 0 -38 560 -2135 585 -2189 34
+-75 106 -148 183 -184 51 -25 83 -33 149 -37 l85 -5 -7 -36 c-10 -55 -61 -177
+-94 -224 -88 -126 -188 -161 -501 -173 -230 -9 -214 9 -218 -262 -4 -224 3
+-271 41 -291 18 -10 93 -12 313 -9 257 4 298 7 369 26 294 80 506 296 638 652
+36 96 687 2678 687 2723 0 13 -10 33 -23 45 -23 21 -30 22 -290 22 -288 0
+-308 -3 -333 -52 -8 -16 -113 -456 -234 -979 -120 -523 -221 -954 -225 -957
+-3 -3 -9 -1 -14 4 -4 5 -106 432 -226 949 -120 517 -225 955 -233 973 -27 59
+-41 62 -345 62 -253 0 -275 -1 -290 -18z"></path>
+</g>
+</svg>
+  <!-- <svg class="LinkLogo__svg" viewBox="0 0 52 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M7.32711 2.08111C7.32711 0.930578 8.27753 0 9.45259 0C10.6276 0 11.5781 0.930578 11.5781 2.08111C11.5781 3.23164 10.6276 4.16222 9.45259 4.16222C8.27753 4.16222 7.32711 3.23164 7.32711 2.08111ZM0 0.218434H3.80167V22.7553H0V0.218434ZM51.4297 6.68172C49.2352 11.2669 46.7813 14.6001 46.7813 14.6001L52 22.7384H47.5071L44.293 17.7133C41.0788 21.3172 37.882 23.0768 34.8061 23.0768C31.0563 23.0768 29.5183 20.4543 29.5183 17.4764C29.5183 17.1436 29.523 16.7337 29.5274 16.3383V16.3381L29.5274 16.3378C29.5316 15.9695 29.5356 15.6138 29.5356 15.3445C29.5356 11.4023 29.1209 10.2856 27.7557 10.4717C25.1464 10.827 21.1892 16.6304 18.6145 22.7553H15.0374V6.68172H18.8391V14.6847C21.0164 11.1147 23.0037 8.03528 26.2005 6.85091C28.0495 6.15721 29.622 6.46176 30.4342 6.81707C33.3891 8.08604 33.3718 11.1992 33.3373 15.3615C33.32 15.9198 33.32 16.512 33.32 17.138C33.32 18.6608 33.752 19.3207 34.8061 19.4222C35.8256 19.5237 36.6033 19.033 36.6033 19.033V0.218434H40.4049V16.3597C40.4049 16.3597 43.7055 13.4157 47.1961 6.68172H51.4297ZM11.351 6.6833H7.54938V22.7569H11.351V6.6833Z" fill="currentColor"></path> -->
+      <!-- <title>Stably</title>
+    </svg> -->
+  </a>
+                <div class="LinkPhoneAnimation__panelFooterSecure">
+                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.29614 3.67085V2.64813C1.29614 1.97002 1.55953 1.31968 2.02838 0.840183C2.49722 0.360687 3.1331 0.0913086 3.79614 0.0913086C4.45918 0.0913086 5.09507 0.360687 5.56391 0.840183C6.03275 1.31968 6.29614 1.97002 6.29614 2.64813V3.67085H6.54614C6.67875 3.67085 6.80593 3.72473 6.8997 3.82063C6.99346 3.91653 7.04614 4.0466 7.04614 4.18222V7.2504C7.04614 7.52164 6.94079 7.78178 6.75325 7.97358C6.56571 8.16538 6.31136 8.27313 6.04614 8.27313H1.54614C1.28093 8.27313 1.02657 8.16538 0.839036 7.97358C0.651499 7.78178 0.546143 7.52164 0.546143 7.2504V4.18222C0.546143 4.0466 0.598821 3.91653 0.692589 3.82063C0.786357 3.72473 0.913534 3.67085 1.04614 3.67085H1.29614ZM3.79614 4.94926C3.66353 4.94926 3.53636 5.00314 3.44259 5.09904C3.34882 5.19494 3.29614 5.32501 3.29614 5.46063V6.48335C3.29614 6.61898 3.34882 6.74904 3.44259 6.84494C3.53636 6.94084 3.66353 6.99472 3.79614 6.99472C3.92875 6.99472 4.05593 6.94084 4.1497 6.84494C4.24346 6.74904 4.29614 6.61898 4.29614 6.48335V5.46063C4.29614 5.32501 4.24346 5.19494 4.1497 5.09904C4.05593 5.00314 3.92875 4.94926 3.79614 4.94926ZM5.29614 3.67085V2.64813C5.29614 2.24126 5.13811 1.85106 4.8568 1.56336C4.5755 1.27566 4.19397 1.11404 3.79614 1.11404C3.39832 1.11404 3.01679 1.27566 2.73548 1.56336C2.45418 1.85106 2.29614 2.24126 2.29614 2.64813V3.67085H5.29614Z" fill="#A3ACBA"></path>
+                  </svg>
+                  Safe and secure
+                </div>
+              </div>
+            </div>
+
+            <div class="LinkPhoneAnimation__buttonContainer">
+              <div class="LinkPhoneAnimation__button LinkPhoneAnimation__button--isDisabled">Pay $42.08</div>
+              <div class="LinkPhoneAnimation__button LinkPhoneAnimation__button--isActive" data-js-target="LinkPhoneAnimation.button">
+                <span data-js-target="LinkPhoneAnimation.buttonText">Pay $42.08</span>
+                <svg class="Spinner LinkPhoneAnimation__buttonSpinner" data-js-target="LinkPhoneAnimation.buttonSpinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><g class="Spinner__circle" fill="none" fill-rule="evenodd"><circle cx="8" cy="8" r="8"></circle><path fill="currentColor" fill-rule="nonzero" d="M8 16a.62.62 0 1 1 0-1.24A6.76 6.76 0 1 0 2.76 3.71a.62.62 0 1 1-.96-.77A7.99 7.99 0 0 1 16 8a8 8 0 0 1-8 8z"></path></g></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="LinkPhoneAnimation__notificationContainer">
+          <div class="LinkPhoneAnimation__notification" data-js-target="LinkPhoneAnimation.notification">
+            <div class="LinkPhoneAnimation__notificationIcon">
+              <svg width="15" height="14" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7.5 13C11.6421 13 15 10.0899 15 6.5C15 2.91015 11.6421 0 7.5 0C3.35786 0 0 2.91015 0 6.5C0 10.0899 3.35786 13 7.5 13Z" fill="#FEFFFE"></path>
+                <path d="M3.44036 11C3.60517 11.4009 3.49691 11.954 3.11557 12.6592C2.73424 13.3644 2.36238 13.8113 2 14C3.05752 13.7494 3.91081 13.4588 4.55989 13.1284C5.20897 12.798 5.689 12.4228 6 12.0027L3.44036 11Z" fill="#FEFFFE"></path>
+              </svg>
+            </div>
+            <div class="LinkPhoneAnimation__notificationTitle">Messages</div>
+            <div class="LinkPhoneAnimation__notificationBody">Your verification code is: 424242</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="LinkPhoneAnimation__successScreen" data-js-target="LinkPhoneAnimation.successScreen">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path class="LinkPhoneAnimation__successCheck" data-js-target="LinkPhoneAnimation.successCheck" d="M28.3544 14.7715L17.1652 25.4396L11.9419 20.4842" stroke="var(--animationCheckColor, #0055FF)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-dashoffset: 0px;"></path>
+        <path d="M20.1479 38.5697C30.5719 38.5697 39.0223 30.1193 39.0223 19.6952C39.0223 9.27118 30.5719 0.820801 20.1479 0.820801C9.72381 0.820801 1.27344 9.27118 1.27344 19.6952C1.27344 30.1193 9.72381 38.5697 20.1479 38.5697Z" stroke="var(--animationCheckColor, #0055FF)" stroke-width="1.64126"></path>
+      </svg>
+
+      <div class="LinkPhoneAnimation__successTitle">Payment successful</div>
+      <div class="LinkPhoneAnimation__successPrice">$42.08</div>
+      <div class="LinkPhoneAnimation__successBody">The payment will appear on your statement as “P Skincare”.</div>
+      <div class="LinkPhoneAnimation__successLink" data-js-target="LinkPhoneAnimation.replayLink">Back to home</div>
+    </div>
+  </div>
+</figure>
+
+      <section class="
+    LinkCopy
+    LinkCopy--variantSection
+
+  ">
+  <header class="LinkCopy__header">
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSection
+    LinkCopy__title
+  ">Secure checkout</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantSection
+    LinkCopy__body
+  ">
+  <p>Stablecoins are the best way to onboard into Web3. With Stably you can buy, sell, and hold stablecoins like USDC, USDT, and DAI. You’ll get a chance to review your order before clicking to confirm your purchase.</p>
+  <!-- <p>Save your payment information, and we’ll autofill your saved card details and addresses for all future purchases on Link-enabled sites.
+     You’ll get a chance to review your order before clicking to confirm your purchase.</p> -->
+    </div>
+
+
+
+</section>
+<section>
+  <div style="height: 500px;">
+
+  </div>
+
+</section>
+
+
+</section>
+</section>
+
+  <section class="
+    LinkSection
+
+
+
+  ">
+  <div class="LinkSection__content">
+    <div class="LinkRowLayout">
+  <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSection
+
+  ">Your data, protected</h1>
+
+      <div class="LinkColumnLayout" data-columns="1,1,1">
+  <section class="
+    LinkCopy
+    LinkCopy--variantDetail
+
+  ">
+  <header class="LinkCopy__header">
+
+      <div class="LinkCopy__iconContainer">
+
+          <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M31.5 16.9925H28V10.5C28 7.71523 26.8938 5.04451 24.9246 3.07538C22.9555 1.10625 20.2848 0 17.5 0C14.7152 0 12.0445 1.10625 10.0754 3.07538C8.10625 5.04451 7 7.71523 7 10.5V16.9925H3.5C2.57174 16.9925 1.6815 17.3612 1.02513 18.0176C0.368749 18.674 0 19.5642 0 20.4925V37.9925C0 38.9208 0.368749 39.811 1.02513 40.4674C1.6815 41.1238 2.57174 41.4925 3.5 41.4925H31.5C32.4283 41.4925 33.3185 41.1238 33.9749 40.4674C34.6312 39.811 35 38.9208 35 37.9925V20.4925C35 19.5642 34.6312 18.674 33.9749 18.0176C33.3185 17.3612 32.4283 16.9925 31.5 16.9925ZM10.5 10.5C10.5 8.64349 11.2375 6.86301 12.5503 5.55025C13.863 4.2375 15.6435 3.5 17.5 3.5C19.3565 3.5 21.137 4.2375 22.4497 5.55025C23.7625 6.86301 24.5 8.64349 24.5 10.5V16.9925H10.5V10.5ZM31.5 37.9925H3.5V20.4925H31.5V37.9925Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+    <path d="M17.5 34.125C17.9641 34.125 18.4092 33.9406 18.7374 33.6124C19.0656 33.2842 19.25 32.8391 19.25 32.375V26.25C19.25 25.7859 19.0656 25.3408 18.7374 25.0126C18.4092 24.6844 17.9641 24.5 17.5 24.5C17.0359 24.5 16.5908 24.6844 16.2626 25.0126C15.9344 25.3408 15.75 25.7859 15.75 26.25V32.375C15.75 32.8391 15.9344 33.2842 16.2626 33.6124C16.5908 33.9406 17.0359 34.125 17.5 34.125Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+  </svg>
+
+      </div>
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantDetail
+    LinkCopy__title
+  ">Data privacy</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantDetail
+    LinkCopy__body
+  "><p>When you make a payment with Stably, we encrypt your data with leading encryption standards to keep it secure.</p></div>
+
+
+
+</section>
+
+        <section class="
+    LinkCopy
+    LinkCopy--variantDetail
+
+  ">
+  <header class="LinkCopy__header">
+
+      <div class="LinkCopy__iconContainer">
+
+          <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 1.75H3.5C2.57174 1.75 1.6815 2.11875 1.02512 2.77513C0.368746 3.4315 0 4.32174 0 5.25V37.9925C0 38.9208 0.368746 39.811 1.02512 40.4674C1.6815 41.1238 2.57174 41.4925 3.5 41.4925H21C21.9283 41.4925 22.8185 41.1238 23.4749 40.4674C24.1313 39.811 24.5 38.9208 24.5 37.9925V5.25C24.5 4.32174 24.1313 3.4315 23.4749 2.77513C22.8185 2.11875 21.9283 1.75 21 1.75ZM21 37.9925H3.5V5.25H7.52501C7.63329 5.60738 7.85306 5.92076 8.15218 6.14431C8.4513 6.36787 8.81408 6.48987 9.1875 6.4925H15.3125C15.6859 6.48987 16.0487 6.36787 16.3478 6.14431C16.6469 5.92076 16.8667 5.60738 16.975 5.25H21V37.9925Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+    <path d="M15.3125 30.9924H9.1875C8.72337 30.9924 8.27825 31.1768 7.95006 31.505C7.62187 31.8332 7.4375 32.2783 7.4375 32.7424C7.4375 33.2066 7.62187 33.6517 7.95006 33.9799C8.27825 34.3081 8.72337 34.4924 9.1875 34.4924H15.3125C15.7766 34.4924 16.2217 34.3081 16.5499 33.9799C16.8781 33.6517 17.0625 33.2066 17.0625 32.7424C17.0625 32.2783 16.8781 31.8332 16.5499 31.505C16.2217 31.1768 15.7766 30.9924 15.3125 30.9924Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+  </svg>
+
+      </div>
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantDetail
+    LinkCopy__title
+  ">Identity verification</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantDetail
+    LinkCopy__body
+  "><p>To verify it’s you, we’ll text or email you a one-time code. For additional security on certain transactions, we may require a secondary verification, including biometric or pin.</p></div>
+
+
+
+</section>
+
+        <section class="
+    LinkCopy
+    LinkCopy--variantDetail
+
+  ">
+  <header class="LinkCopy__header">
+
+      <div class="LinkCopy__iconContainer">
+
+          <svg class=" LinkFeatureIcon" width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M31.6838 7.55527L16.905 4.41402C16.6628 4.36199 16.4122 4.36199 16.17 4.41402L1.39125 7.55527C0.999054 7.63741 0.646929 7.85166 0.393707 8.16222C0.140486 8.47277 0.00150804 8.86082 0 9.26152V24.2328C0 32.554 5.87125 38.8803 16.0913 41.584C16.3776 41.6626 16.6799 41.6626 16.9663 41.584C27.2038 38.8803 33.075 32.5628 33.075 24.2328V9.26152C33.0735 8.86082 32.9345 8.47277 32.6813 8.16222C32.4281 7.85166 32.0759 7.63741 31.6838 7.55527ZM29.575 24.2328C29.575 33.0265 21.6125 36.6578 16.5375 38.084C11.4625 36.6578 3.5 33.0265 3.5 24.2328V10.6878L16.5375 7.91402L29.575 10.6878V24.2328Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+    <path d="M10.8846 21.6603C10.722 21.4977 10.529 21.3687 10.3166 21.2808C10.1041 21.1928 9.87642 21.1475 9.64648 21.1475C9.41654 21.1475 9.18885 21.1928 8.97641 21.2808C8.76398 21.3687 8.57095 21.4977 8.40836 21.6603C8.24576 21.8229 8.11679 22.0159 8.0288 22.2284C7.9408 22.4408 7.89551 22.6685 7.89551 22.8984C7.89551 23.1284 7.9408 23.3561 8.0288 23.5685C8.11679 23.7809 8.24576 23.974 8.40836 24.1366L12.7834 28.5116C13.1112 28.8375 13.5548 29.0205 14.0171 29.0205C14.4794 29.0205 14.923 28.8375 15.2509 28.5116L25.1559 18.5628C25.319 18.3991 25.4483 18.2048 25.5364 17.9911C25.6245 17.7774 25.6696 17.5484 25.6692 17.3172C25.6688 17.0861 25.6229 16.8572 25.5341 16.6438C25.4452 16.4304 25.3152 16.2366 25.1515 16.0734C24.9877 15.9103 24.7935 15.781 24.5797 15.6929C24.366 15.6048 24.137 15.5597 23.9059 15.5601C23.6747 15.5605 23.4459 15.6064 23.2325 15.6952C23.0191 15.7841 22.8253 15.9141 22.6621 16.0778L13.9734 24.7666L10.8846 21.6603Z" fill="var(--iconFill, var(--colorGreyDark))"></path>
+  </svg>
+
+      </div>
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantDetail
+    LinkCopy__title
+  ">Security standards</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantDetail
+    LinkCopy__body
+  "><p>We’re a certified PCI Service Provider Level 1, which means we meet the highest level of certification available in the payments industry.</p></div>
+
+
+
+</section>
+</div>
+</div>
+  </div>
+</section>
+
+  <section class="
+    LinkSection
+
+
+
+  ">
+  <div class="LinkSection__content">
+    <div class="LinkRowLayout">
+  <div class="LinkColumnLayout" data-columns="1,1">
+  <section class="
+    LinkCopy
+    LinkCopy--variantSection
+
+  ">
+  <header class="LinkCopy__header">
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSection
+    LinkCopy__title
+  ">Our partners</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantSection
+    LinkCopy__body
+  "><p>Use Stably for easy and secure checkouts on these web3 applications and many more.</p></div>
+
+
+
+</section>
+        <div class="LinkColumnFiller"></div>
+</div>
+
+      <div class="LinkColumnLayout" data-columns="1,1,1,1">
+  <article class="LinkStoryCard " data-js-controller="LinkStoryCard">
+  <a class="
+    Link
+    LinkStoryCard__wrapper
+  " href="https://www.talkspace.com/" target="_blank" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label=""><div class="LinkStoryCard__content">
+      <picture class="
+    Picture
+
+
+    LinkStoryCardBackground
+  ">
+
+
+
+
+      <source srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/3C4Wme8YrNhBxX94KXSfDK/40c8bb1fee23e9b1f855ddf85aab7bf1/Talkspace.jpg?q=80&amp;fm=webp
+        " type="image/webp">
+
+
+
+  <img class="Picture__image LinkStoryCardBackground__image" src="./Talkspace.jpg" alt="">
+</picture>
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" fill="none" class="UserLogo variant-- LinkStoryCard__logo" viewBox="34 2 200 40"><path fill="var(--userLogoColor, #00585F)" fill-rule="evenodd" stroke="var(--userLogoColor, #00585F)" stroke-width=".5" d="M116.939 19.967c0-2.765 1.923-4.465 4.272-4.465 5.686 0 5.686 8.956 0 8.956-2.349 0-4.272-1.697-4.272-4.491zm8.541 4.574l.135 2.19h2.615v-13.5h-2.668l-.082 2.136c-.826-1.535-2.613-2.437-4.484-2.437-3.785 0-6.808 2.519-6.808 7.037 0 4.6 2.911 7.146 6.755 7.12 1.632 0 3.66-.822 4.537-2.546zm11.772-8.954c1.044 0 2.138.382 2.964 1.203l1.767-1.89c-1.42-1.424-2.94-1.998-4.754-1.998-3.816 0-6.936 2.436-6.936 7.092 0 4.657 3.146 7.094 6.936 7.094 1.893 0 3.524-.632 4.989-2.108l-1.87-1.892c-.852.902-1.998 1.26-3.119 1.26-2.268 0-4.188-1.506-4.188-4.354 0-2.682 1.839-4.407 4.211-4.407zm-46.51 9.064c-1.547-.032-3.39-.605-4.614-1.998l-1.438 1.998c1.732 1.999 3.863 2.49 6 2.49 3.413 0 5.582-1.752 5.609-4.27.02-3.48-3.15-4.028-5.58-4.245-1.68-.165-2.829-.603-2.855-1.726 0-1.07 1.119-1.644 2.8-1.615 1.308 0 2.43.274 3.47 1.259l1.546-1.863c-1.464-1.343-3.034-1.803-5.068-1.803-2.453 0-5.475 1.119-5.475 4.105.028 2.984 2.885 3.805 5.363 4.054 1.955.19 3.076.656 3.05 1.861-.028 1.26-1.496 1.753-2.809 1.753zm14.68-8.957c2.507 0 4.158 1.756 4.158 4.3 0 2.521-1.759 4.298-4.158 4.298-2.403 0-4.14-1.885-4.14-4.298 0-2.412 1.599-4.3 4.14-4.3zM78.678 2c-.857 0-1.551.7-1.551 1.554v8.389l-6.006 6.82V7.588h-2.776V26.73h2.776v-6.244l6.006 6.66v9.298c0 .859.69 1.555 1.55 1.555h22.367V24.758c.988 1.673 3.042 2.273 4.642 2.273 4.085 0 6.649-2.957 6.649-7.037s-2.727-7.01-6.649-7.037c-1.76 0-3.627.82-4.642 2.463l-.164-2.188h-2.586v21.894l-17.88-.007a.508.508 0 01-.512-.512v-8.525l-5.939-6.498 5.94-6.609V5.367c0-.288.237-.52.517-.52h81.69c.286 0 .517.225.517.525v29.221c0 .29-.237.526-.526.526l-58.311.01v2.85l60.056.02c.858 0 1.554-.702 1.554-1.546V3.547c0-.854-.698-1.547-1.551-1.547H78.678zm67.292 16.652c.428-2.137 2.081-3.26 4.085-3.26 2.216 0 3.735 1.123 3.896 3.26h-7.981zm4.001-5.774c-4.106 0-6.91 2.927-6.91 7.034 0 4.327 2.777 7.146 7.1 7.146 2.029 0 4.296-.767 5.659-2.3l-1.793-1.777c-.797.93-2.477 1.449-3.812 1.449-2.405 0-4.058-1.342-4.299-3.393h10.674c.506-5.509-2.375-8.159-6.619-8.159zm-98.01 11.58c-2.344 0-4.265-1.697-4.265-4.491 0-2.765 1.92-4.465 4.265-4.465 5.69 0 5.69 8.956 0 8.956zm4.272-9.09c-.822-1.536-2.612-2.438-4.478-2.438-3.794 0-6.808 2.519-6.808 7.037 0 4.6 2.906 7.146 6.75 7.12 1.628 0 3.656-.822 4.536-2.546l.136 2.19h2.614v-13.5h-2.666l-.084 2.136zm-15.055 8.98c-1.278 0-1.894-.795-1.894-2.216v-6.438h3.874v-2.435h-3.842V7.588h-2.777v5.671H34v2.435h2.539v6.438c0 3.172 1.626 4.845 4.483 4.764.93 0 1.74-.192 2.643-.605l-.803-2.409c-.534.275-1.148.466-1.684.466zm21.114 2.383h2.75V7.588h-2.75V26.73z" clip-rule="evenodd"></path><title>Talkspace logo</title></svg>
+
+      <header class="LinkStoryCard__copy">
+        <svg class="LinkStoryCard__arrowSvg" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect class="LinkStoryCard__arrowSvgCircle" x=".548" y=".554" width="32.647" height="31.903" rx="15.952" stroke="#032527" stroke-width="1.097"></rect>
+          <path d="M12.742 12.037v1.47l7.107-.022-8.49 8.49 1.098 1.097 8.49-8.49-.023 7.108h1.47v-9.653h-9.652Z" fill="#032527"></path>
+        </svg>
+        <p class="LinkStoryCard__label">Send stablecoins to your friends anytime, anywhere.</p>
+      </header>
+    </div></a>
+</article>
+        <article class="LinkStoryCard " data-js-controller="LinkStoryCard">
+  <a class="
+    Link
+    LinkStoryCard__wrapper
+  " href="https://italic.com/" target="_blank" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label=""><div class="LinkStoryCard__content">
+      <picture class="
+    Picture
+
+
+    LinkStoryCardBackground
+  ">
+
+
+
+
+      <source srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/4sLcWdqNEAjOE5FPqhg3gl/ed188e58204339343d6b8958e8f13ee6/Italic.jpg?q=80&amp;fm=webp
+        " type="image/webp">
+
+
+
+  <img class="Picture__image LinkStoryCardBackground__image" src="./Italic.jpg" alt="">
+</picture>
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" fill="none" class="UserLogo variant-- LinkStoryCard__logo" viewBox="64 11 200 40"><path fill="var(--userLogoColor, #171722)" d="M135.42 17.1s.111-6.1-7.19-6.1c-4.315 0-7.706 3.384-7.706 9 0 6.396 3.982 9 7.89 9 5.42 0 6.821-5.17 6.821-5.17h-.663s-1.513 2.344-4.867 2.344c-2.766 0-5.236-2.715-5.236-6.769 0-5.133 1.917-6.917 3.909-6.917 4.166 0 3.466 4.611 3.466 4.611h3.576zm-37.277.223c0-2.306-.553-6.286-6.563-6.286-6.932 0-7.006 4.611-7.006 4.611l3.871-.036s-.7-3.236 2.655-3.236c2.323 0 3.393 1.86 3.393 5.505v1.116c-1.07-.671-2.435-1.116-4.02-1.116-4.203 0-6.858 2.305-6.858 5.578 0 3.384 2.508 5.504 5.863 5.504 2.95 0 4.682-2.082 5.604-3.793h.184c0 1.822.407 3.421.407 3.421h3.023s-.553-1.637-.553-4.426v-6.842zm-7.485 9.111c-1.992 0-3.54-1.264-3.54-3.235 0-2.01 1.513-3.497 3.946-3.497 1.733 0 2.84.558 3.76 1.45l.037 2.269c-.7 1.154-2.101 3.013-4.203 3.013zM64 11.446c.479 8.59 0 17.181 0 17.181h3.798s-.48-8.59 0-17.18H64zm50.145 0c.48 8.59 0 17.181 0 17.181h3.798s-.48-8.59 0-17.18h-3.798zm-31.267 2.232l-.37-2.233H69.863l-.368 2.232c1.032-.185 3.281-.296 4.866-.371.332 7.922-.073 15.322-.073 15.322h3.797s-.405-7.4-.073-15.322c1.585.075 3.835.223 4.867.372zm22.602 13.165c-.331-7.959.075-15.397.075-15.397h-3.798s.479 8.59 0 17.181h10.139l.369-3.272h-.258c-2.139 1.413-5.641 1.488-6.525 1.488h-.002z"></path><title>Italic logo</title></svg>
+
+      <header class="LinkStoryCard__copy">
+        <svg class="LinkStoryCard__arrowSvg" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect class="LinkStoryCard__arrowSvgCircle" x=".548" y=".554" width="32.647" height="31.903" rx="15.952" stroke="#032527" stroke-width="1.097"></rect>
+          <path d="M12.742 12.037v1.47l7.107-.022-8.49 8.49 1.098 1.097 8.49-8.49-.023 7.108h1.47v-9.653h-9.652Z" fill="#032527"></path>
+        </svg>
+        <p class="LinkStoryCard__label">Shop luxury-grade essentials without the labels.</p>
+      </header>
+    </div></a>
+</article>
+        <article class="LinkStoryCard " data-js-controller="LinkStoryCard">
+  <a class="
+    Link
+    LinkStoryCard__wrapper
+  " href="https://www.keeps.com/" target="_blank" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label=""><div class="LinkStoryCard__content">
+      <picture class="
+    Picture
+
+
+    LinkStoryCardBackground
+  ">
+
+
+
+
+      <source srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/3SAvOx255ai0KDj2SQfDI0/6a12f70fa6af8d29d1fb295da00b671a/Keeps.jpg?q=80&amp;fm=webp
+        " type="image/webp">
+
+
+
+  <img class="Picture__image LinkStoryCardBackground__image" src="./Keeps.jpg" alt="">
+</picture>
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" fill="none" class="UserLogo variant-- LinkStoryCard__logo" viewBox="62 6 200 40"><path fill="var(--userLogoColor, #FF4646)" fill-rule="evenodd" d="M87.912 11.727c-1.749 0-7.458.559-7.458 7.738 0 5.561 3.925 7.535 7.286 7.535 3.62 0 5.839-1.867 6.593-5.549l.047-.226-.8-.276-.103.207c-.88 1.773-2.128 2.634-3.816 2.634-2.347 0-3.774-1.796-3.836-4.812h8.578l.02-.242c.03-.357.03-.566.03-.657 0-5.893-5.006-6.352-6.541-6.352zm-.057 1.076c.834 0 1.688.538 1.688 4.526 0 .097 0 .331-.013.602h-3.702c.077-3.545.704-5.129 2.027-5.129m14.693-1.075c-1.75 0-7.458.559-7.458 7.738 0 5.561 3.925 7.535 7.287 7.535 3.619 0 5.837-1.867 6.592-5.549l.047-.226-.888-.31-.103.208c-.904 1.82-2.088 2.666-3.727 2.666-2.348 0-3.775-1.795-3.837-4.81h8.579l.02-.243c.029-.357.029-.566.029-.657 0-5.893-5.006-6.352-6.541-6.352zm-.057 1.076c.834 0 1.688.538 1.688 4.526 0 .097 0 .331-.013.602h-3.702c.077-3.545.704-5.129 2.027-5.129" clip-rule="evenodd"></path><path fill="var(--userLogoColor, #FF4646)" fill-rule="evenodd" d="M119.405 11.377c-1.758 0-3.135.836-4.098 2.486V11.61h-6.719v.434l1.44 1.526c.124.144.123.172.115.357a4.23 4.23 0 00-.005.195V33.69l.464.31 4.714-2.014-.008-6.635c.717.96 1.9 1.463 3.451 1.463 3.656 0 6.211-3.3 6.211-8.025 0-4.434-2.237-7.413-5.565-7.413m.193 7.646c0 2.568-.713 5.567-2.721 5.567-.619 0-1.201-.213-1.57-.573V15.43c.513-.766 1.169-1.187 1.851-1.187 2.016 0 2.44 2.6 2.44 4.78m14.843-1.301l-1.804-.807c-1.653-.746-2.44-1.293-2.44-2.385 0-1.297 1.092-1.757 2.026-1.757h.395c.249 0 .269.035.424.299l2.273 4.145h.384l1.742-4.616-.264-.083a16.97 16.97 0 00-5.039-.79c-3.668 0-6.038 1.892-6.038 4.822 0 1.924.997 3.424 2.883 4.336l1.919.924c1.818.859 2.558 1.306 2.558 2.3 0 1.12-.94 1.843-2.393 1.843h-.649c-.186 0-.278-.058-.363-.233l-2.329-4.615h-.394l-1.697 4.897.243.088c1.563.56 3.583.91 5.274.91 4.055 0 6.573-1.937 6.573-5.054 0-2.426-1.578-3.463-3.284-4.224zm-61.424-4.57s6.957-6.695 6.894-6.656l.063-.04V6H71.73v.4l2.86 2.944c.206.29.206.29.02.494l-5.12 4.913V6H62v.426l1.726 1.85c.168.168.177.178.177.495v17.592h5.587v-8.527l5.061 8.403.075.124h7.1v-.424l-1.707-1.66c-.247-.253-4.301-6.758-7.002-11.127z" clip-rule="evenodd"></path><title>Keeps logo</title></svg>
+
+      <header class="LinkStoryCard__copy">
+        <svg class="LinkStoryCard__arrowSvg" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect class="LinkStoryCard__arrowSvgCircle" x=".548" y=".554" width="32.647" height="31.903" rx="15.952" stroke="#032527" stroke-width="1.097"></rect>
+          <path d="M12.742 12.037v1.47l7.107-.022-8.49 8.49 1.098 1.097 8.49-8.49-.023 7.108h1.47v-9.653h-9.652Z" fill="#032527"></path>
+        </svg>
+        <p class="LinkStoryCard__label">Get expert-backed hair loss products delivered to you.</p>
+      </header>
+    </div></a>
+</article>
+        <article class="LinkStoryCard " data-js-controller="LinkStoryCard">
+  <a class="
+    Link
+    LinkStoryCard__wrapper
+  " href="https://magiceden.io/" target="_blank" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label=""><div class="LinkStoryCard__content">
+      <picture class="
+    Picture
+
+
+    LinkStoryCardBackground
+  ">
+
+
+
+
+      <source srcset="
+          https://images.ctfassets.net/fzn2n1nzq965/7dCYwoBQciYU68PLxY6Tr6/2ac039856e8f62351328d6223eb6f5a8/MagicEden.png?q=80&amp;fm=webp
+        " type="image/webp">
+
+
+
+  <img class="Picture__image LinkStoryCardBackground__image" src="./MagicEden.png" alt="">
+</picture>
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" fill="none" class="UserLogo variant-- LinkStoryCard__logo" viewBox="20 7 200 40"><path fill="var(--userLogoColor, var(--userLogoColor, url(#a-user-logo-MagicEden-)))" d="M143.854 22.962h-2.778a.841.841 0 01-.571-.242.815.815 0 01-.246-.564v-.644a.815.815 0 01.246-.563.841.841 0 01.571-.242h2.375a.825.825 0 00.578-.236.8.8 0 000-1.139.825.825 0 00-.578-.236h-2.397a.843.843 0 01-.571-.241.82.82 0 01-.246-.564v-.644a.82.82 0 01.246-.563.843.843 0 01.571-.242h2.724a.826.826 0 00.578-.236.8.8 0 000-1.139.826.826 0 00-.578-.235h-3.269a.55.55 0 00-.351.117.53.53 0 00-.193.312l-1.743 8.106v.16c.03.189.131.36.282.478.151.12.342.179.535.167h4.793a.825.825 0 00.578-.236.8.8 0 000-1.139.825.825 0 00-.578-.236h.022z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#b-user-logo-MagicEden-)))" d="M83.392 15.285h-1.089a.863.863 0 00-.763.483l-2.396 5.69a.055.055 0 01-.016.038.055.055 0 01-.039.016c-.054 0-.054 0-.054-.054l-2.397-5.69a.96.96 0 00-.272-.376c-.218-.16-.49.054-.545.323l-1.797 8.213a.397.397 0 00.054.268c.065.13.166.239.291.315.126.076.27.116.417.115h.327c.211-.011.41-.1.558-.25a.821.821 0 00.237-.556v-5.26a.054.054 0 01.093-.038c.01.01.016.024.016.038l2.233 5.529c.06.15.165.276.302.363a.784.784 0 00.461.12h.218a.864.864 0 00.763-.483l2.233-5.476c0-.014.006-.028.016-.038a.055.055 0 01.038-.015c.015 0 .029.005.039.015.01.01.016.024.016.038v5.207a.819.819 0 00.245.564c.152.15.357.236.572.242h.327a.844.844 0 00.571-.242.819.819 0 00.246-.564v-7.73a.969.969 0 00-.31-.556.995.995 0 00-.595-.249z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#c-user-logo-MagicEden-)))" d="M108.339 19.634h-2.396a.77.77 0 00-.54.22.746.746 0 000 1.062.77.77 0 00.54.22h.435c.436 0 .872.376.654.806-.327.698-.981 1.073-2.015 1.073-1.526 0-2.452-1.127-2.452-3.06 0-1.932.981-3.06 2.452-3.06a2 2 0 01.986.204c.306.15.566.376.757.656.085.156.21.288.363.382.153.094.328.147.508.154h.49a.692.692 0 00.584-.245.678.678 0 00.139-.292.65.65 0 00-.015-.321 3.978 3.978 0 00-1.561-1.695 4.065 4.065 0 00-2.251-.56c-2.506 0-4.413 1.771-4.413 4.778 0 3.006 1.798 4.777 4.467 4.777 2.397 0 4.085-1.503 4.085-3.919v-.375a.786.786 0 00-.501-.749.815.815 0 00-.316-.057z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#d-user-logo-MagicEden-)))" d="M94.177 15.822a.809.809 0 00-.295-.387.826.826 0 00-.468-.15h-1.416a.81.81 0 00-.763.537l-2.723 7.73a.806.806 0 00.393.976.85.85 0 00.37.098h.435a.826.826 0 00.468-.15.809.809 0 00.295-.387l.327-1.02a.809.809 0 01.295-.387.826.826 0 01.467-.15h2.234c.167.002.33.054.467.15.136.096.24.231.295.387l.327 1.02a.819.819 0 00.763.537h.435a.834.834 0 00.656-.348.81.81 0 00.107-.726l-2.669-7.73zm-1.384 5.1h-.163a.84.84 0 01-.655-.348.81.81 0 01-.108-.726l.817-2.47c0-.014.006-.027.016-.037a.055.055 0 01.078 0c.01.01.015.023.015.038l.817 2.469a.865.865 0 01-.154.725.886.886 0 01-.663.349z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#e-user-logo-MagicEden-)))" d="M114.658 15.285h-.381a.843.843 0 00-.572.242.824.824 0 00-.246.563v7.73a.824.824 0 00.246.564c.152.15.356.236.572.242h.381a.844.844 0 00.571-.242.82.82 0 00.246-.564v-7.73a.86.86 0 00-.255-.554.882.882 0 00-.562-.25z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#f-user-logo-MagicEden-)))" d="M124.19 16.896a2.147 2.147 0 011.852.967.99.99 0 00.362.463c.165.115.362.178.564.18h.381a.69.69 0 00.584-.245.667.667 0 00.125-.613c-.545-1.61-2.016-2.523-3.922-2.523-2.506 0-4.412 1.718-4.412 4.778 0 3.06 1.852 4.777 4.412 4.777 2.015 0 3.377-1.074 3.867-2.416a.65.65 0 00-.125-.613.687.687 0 00-.583-.246h-.436a1.12 1.12 0 00-.926.644 1.96 1.96 0 01-.762.731 2 2 0 01-1.035.236c-1.417 0-2.397-1.074-2.397-3.06s.98-3.06 2.451-3.06z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#g-user-logo-MagicEden-)))" d="M152.405 15.285h-2.56a.843.843 0 00-.571.242.82.82 0 00-.246.563v7.73a.82.82 0 00.246.564c.152.15.356.236.571.242h2.56c2.887 0 4.63-1.772 4.63-4.67 0-2.9-1.797-4.67-4.63-4.67zm-.108 7.623h-.436a.845.845 0 01-.572-.242.818.818 0 01-.245-.563v-4.349a.819.819 0 01.245-.563.846.846 0 01.572-.242h.436c1.797 0 2.723.913 2.723 2.953s-.926 3.006-2.723 3.006z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#h-user-logo-MagicEden-)))" d="M166.84 22.962h-2.778a.843.843 0 01-.571-.241.815.815 0 01-.246-.564v-.644a.815.815 0 01.246-.563.843.843 0 01.571-.242h2.397a.826.826 0 00.578-.236.8.8 0 000-1.139.827.827 0 00-.578-.236h-2.397a.843.843 0 01-.571-.242.815.815 0 01-.246-.563v-.644a.815.815 0 01.246-.563.843.843 0 01.571-.242h2.723a.823.823 0 00.578-.236.8.8 0 000-1.139.823.823 0 00-.578-.236h-4.738a.844.844 0 00-.572.242.824.824 0 00-.246.564v7.73a.824.824 0 00.246.563c.152.15.356.236.572.242h4.793a.843.843 0 00.571-.242.82.82 0 00.246-.563.787.787 0 00-.502-.748.81.81 0 00-.315-.058z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#i-user-logo-MagicEden-)))" d="M179.15 15.285h-.381a.843.843 0 00-.571.242.815.815 0 00-.246.563v4.993c0 .053 0 .053-.055.053h-.054l-3.813-5.475a.775.775 0 00-.654-.322h-.512a.843.843 0 00-.571.242.824.824 0 00-.246.563v7.73a.824.824 0 00.246.563.84.84 0 00.571.242h.382a.843.843 0 00.571-.242.82.82 0 00.246-.563v-5.046a.054.054 0 01.054-.054h.055l3.867 5.476a.775.775 0 00.654.322h.49a.844.844 0 00.571-.242.815.815 0 00.246-.563v-7.73a.92.92 0 00-.294-.52.938.938 0 00-.556-.232z"></path><path fill="var(--userLogoColor, var(--userLogoColor, url(#j-user-logo-MagicEden-)))" d="M50.509 13.584l2.522 2.963c.288.333.544.607.648.762a3.97 3.97 0 011.176 2.819c-.07 1.245-.882 2.093-1.634 3L51.456 25.2l-.92 1.074a.25.25 0 00.06.382.259.259 0 00.141.037h9.2c1.406 0 3.176 1.18 3.072 2.974a3.064 3.064 0 01-.917 2.171 3.155 3.155 0 01-2.204.905H45.481c-.948 0-3.497.102-4.21-2.073a2.546 2.546 0 01-.06-1.406 6.106 6.106 0 01.97-1.911 87.582 87.582 0 012.281-3.189c.997-1.363 2.021-2.684 3.029-4.074a.255.255 0 000-.317l-3.66-4.294a.256.256 0 00-.319-.074.254.254 0 00-.09.074c-.98 1.304-5.273 7.08-6.188 8.25s-3.17 1.235-4.417 0l-5.725-5.663a.262.262 0 00-.285-.056.26.26 0 00-.162.239V29.14a3.665 3.665 0 01-.664 2.167 3.752 3.752 0 01-1.82 1.38 3.174 3.174 0 01-2.841-.397 3.1 3.1 0 01-.97-1.098 3.051 3.051 0 01-.35-1.414V10.197c.033-.706.29-1.384.736-1.937a3.414 3.414 0 011.748-1.145 3.525 3.525 0 011.806.005c.591.158 1.13.468 1.56.897l8.802 8.686a.258.258 0 00.393-.032l6.253-8.53a3.116 3.116 0 011.061-.82 3.16 3.16 0 011.314-.302h16.264a3.149 3.149 0 012.35 1.054 3.038 3.038 0 01.745 2.435 3.14 3.14 0 01-1.094 1.936c-.59.493-1.341.76-2.115.748h-9.107a.26.26 0 00-.221.136.249.249 0 00.014.256z"></path><defs><lineargradient id="a-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="b-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="c-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="d-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="e-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="f-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.576" y2="44.205" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="g-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="h-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.576" y2="44.205" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="i-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient><lineargradient id="j-user-logo-MagicEden-" x1="38.033" x2="46.61" y1="-6.577" y2="44.204" gradientUnits="userSpaceOnUse"><stop stop-color="#7A00CC"></stop><stop offset="1" stop-color="#F72C87"></stop></lineargradient></defs><title>MagicEden logo</title></svg>
+
+      <header class="LinkStoryCard__copy">
+        <svg class="LinkStoryCard__arrowSvg" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect class="LinkStoryCard__arrowSvgCircle" x=".548" y=".554" width="32.647" height="31.903" rx="15.952" stroke="#032527" stroke-width="1.097"></rect>
+          <path d="M12.742 12.037v1.47l7.107-.022-8.49 8.49 1.098 1.097 8.49-8.49-.023 7.108h1.47v-9.653h-9.652Z" fill="#032527"></path>
+        </svg>
+        <p class="LinkStoryCard__label">Create, discover, and collect unique NFTs.</p>
+      </header>
+    </div></a>
+</article>
+</div>
+</div>
+  </div>
+</section>
+
+  <section class="
+    LinkSection
+
+
+
+  ">
+  <div class="LinkSection__content">
+    <div class="
+    LinkCard
+    flavor--Stripe
+
+  ">
+<div style="height: 200px"></div>
+
+</div>
+  </div>
+</section>
+
+  <section class="
+    LinkSection
+
+
+
+  ">
+  <div class="LinkSection__content">
+    <div class="LinkRowLayout">
+  <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSection
+
+  "><abbr title="Frequently asked questions">FAQs</abbr></h1>
+
+      <dl class="LinkFaqList">
+  <div class="LinkFaqItem">
+  <dt class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSubsection
+
+  ">Which payment methods can I use with Stably?
+</dt>
+  <dd class="
+    LinkCopyBody
+    LinkCopyBody--variantSubsection
+    LinkFaqItem__body
+  "><p>You can use a variety of payment methods with Stably. We support ACH Bank Transfers (Instant and 5 business days), Wires and Card payments</p></dd>
+</div>
+
+        <div class="LinkFaqItem">
+  <dt class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSubsection
+
+  ">How does Stably exchange fiat to crypto?</dt>
+  <dd class="
+    LinkCopyBody
+    LinkCopyBody--variantSubsection
+    LinkFaqItem__body
+  "><p>We use a variety of regulated financial instiutions and exchanges such as PrimeTrust. You can securely add funds to your crypto wallet in one-click. Store your verified identity and payment information with Stably the first time you use it, and we’ll autofill your saved details for all future crypto purchases and sales.</p></dd>
+</div>
+
+        <div class="LinkFaqItem">
+  <dt class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSubsection
+
+  ">Where can I get help with a purchase I made with Stably?</dt>
+  <dd class="
+    LinkCopyBody
+    LinkCopyBody--variantSubsection
+    LinkFaqItem__body
+  "><p>
+            Please reach out to our support page at support.stably.io
+          </p></dd>
+</div>
+
+        <div class="LinkFaqItem">
+  <dt class="
+    LinkCopyTitle
+    LinkCopyTitle--variantSubsection
+
+  ">How do I delete information from Link?</dt>
+  <dd class="
+    LinkCopyBody
+    LinkCopyBody--variantSubsection
+    LinkFaqItem__body
+  "><p>
+   You can reach out to our support team at support.stably.io and close your Stably Ramp account entirely.
+          </p></dd>
+</div>
+</dl>
+</div>
+  </div>
+</section>
+
+  <section class="
+    LinkSection
+
+    LinkSection--variantCard
+    theme--Dark
+  ">
+  <div class="LinkSection__content" style="/* background: #00003f; */">
+    <div class="LinkRowLayout" style="
+">
+  <section class="
+    LinkCopy
+    LinkCopy--variantHero
+
+  ">
+  <header class="LinkCopy__header">
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantHero
+    LinkCopy__title
+  ">Get started with Stably</h1>
+
+  </header>
+
+
+
+
+    <footer class="LinkCopy__footer">
+      <div class="LinkCopy__ctaContainer"><a class="
+    LinkCtaButton
+
+
+  " href="https://app.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Buttons" data-analytics-action="Clicked" data-analytics-label="Sign up (footer)">Sign up</a></div>
+
+    </footer>
+
+</section>
+
+      <section class="
+    LinkCopy
+    LinkCopy--variantDetail
+
+  ">
+  <header class="LinkCopy__header">
+
+
+      <h1 class="
+    LinkCopyTitle
+    LinkCopyTitle--variantDetail
+    LinkCopy__title
+  ">Interested in adding Stably to your site?</h1>
+
+  </header>
+
+
+    <div class="
+    LinkCopyBody
+    LinkCopyBody--variantDetail
+    LinkCopy__body
+  "><p>
+            <a class="
+    LinkTextLink
+
+  " href="https://support.stripe.com/questions/adding-link-to-your-site" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Stably for businesses">Stably for businesses</a>
+          </p></div>
+
+
+
+</section>
+
+      <footer class="LinkSiteFooter">
+  <a class="
+    LinkTextLink
+    LinkLogo
+  " href="https://link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Logo">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1246.000000 570.000000" preserveAspectRatio="xMidYMid meet" style="
+    width: 186%;
+    filter: invert(100%) sepia(0%) saturate(7488%) hue-rotate(160deg) brightness(113%) contrast(98%);
+">
+
+<g transform="translate(0.000000,570.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M2395 4968 c-47 -25 -45 35 -45 -1378 0 -890 4 -1356 11 -1396 30
+-171 94 -299 204 -409 121 -122 271 -190 475 -215 118 -14 502 -13 535 2 40
+18 47 66 43 293 -4 269 13 250 -226 258 -246 7 -311 31 -365 131 -22 41 -22
+43 -25 686 -2 600 -1 646 15 657 12 10 79 13 254 13 224 0 238 1 263 21 l26
+20 0 234 c0 214 -2 235 -19 256 -19 24 -22 24 -264 29 -186 4 -248 8 -260 19
+-15 12 -17 50 -17 358 0 365 -4 398 -48 422 -28 15 -530 14 -557 -1z"></path>
+<path d="M6457 4969 c-49 -28 -47 31 -47 -1699 0 -1769 -3 -1674 57 -1699 23
+-9 196 -11 749 -8 619 3 728 6 785 20 327 80 510 268 576 592 16 81 18 148 18
+695 0 636 -2 671 -47 810 -51 161 -166 309 -300 388 -142 84 -279 111 -558
+112 -226 0 -275 -8 -389 -61 -87 -40 -143 -88 -187 -159 -20 -33 -41 -57 -45
+-54 -5 3 -9 235 -9 515 l0 510 -25 24 -24 25 -268 0 c-172 0 -275 -4 -286 -11z
+m1308 -1364 c72 -19 118 -53 148 -108 22 -42 22 -44 25 -601 3 -626 2 -635
+-63 -701 -61 -60 -102 -67 -434 -73 -318 -5 -364 0 -375 41 -10 38 -6 1087 4
+1161 23 153 106 254 237 285 68 16 392 13 458 -4z"></path>
+<path d="M8979 4961 l-24 -19 -3 -1660 -2 -1661 24 -28 24 -28 249 -3 c136 -2
+263 0 281 3 23 4 39 16 52 38 20 31 20 60 18 1680 l-3 1649 -28 24 -28 24
+-268 0 c-250 0 -270 -1 -292 -19z"></path>
+<path d="M633 4155 c-227 -41 -385 -147 -463 -311 -43 -90 -70 -225 -70 -354
+0 -206 51 -340 175 -464 95 -96 175 -147 574 -367 427 -235 471 -273 471 -404
+0 -51 -3 -60 -33 -90 -63 -63 -84 -65 -623 -65 -282 0 -493 -4 -508 -10 -17
+-6 -28 -21 -35 -47 -14 -49 -14 -367 0 -415 19 -70 3 -68 611 -68 301 0 583 5
+633 10 317 36 512 173 592 415 21 67 26 104 30 225 8 250 -37 383 -177 520
+-87 86 -136 118 -535 352 -365 214 -406 241 -449 288 -92 102 -57 221 74 249
+32 7 203 11 471 11 l420 0 24 25 c25 24 25 24 25 235 0 220 -6 259 -45 274 -9
+3 -258 6 -553 5 -394 -1 -556 -4 -609 -14z"></path>
+<path d="M4520 4151 c-299 -63 -495 -249 -571 -541 -22 -82 -23 -103 -27 -680
+-4 -741 2 -802 99 -990 93 -180 267 -306 489 -355 118 -25 405 -32 510 -11
+160 32 289 112 348 218 15 26 30 48 34 48 3 0 8 -52 10 -115 5 -171 -18 -160
+324 -160 l276 0 24 28 24 28 0 1240 c0 1320 1 1285 -45 1303 -9 3 -330 6 -713
+5 -631 0 -705 -2 -782 -18z m875 -557 c14 -15 15 -75 13 -613 -3 -553 -4 -600
+-22 -646 -38 -103 -112 -172 -210 -197 -65 -17 -375 -17 -432 0 -49 14 -101
+48 -125 82 -10 14 -26 53 -34 87 -14 54 -16 136 -13 590 l3 528 30 60 c33 65
+65 90 144 111 31 9 140 13 338 13 255 1 294 -1 308 -15z"></path>
+<path d="M9967 4152 c-10 -10 -17 -28 -17 -40 0 -38 560 -2135 585 -2189 34
+-75 106 -148 183 -184 51 -25 83 -33 149 -37 l85 -5 -7 -36 c-10 -55 -61 -177
+-94 -224 -88 -126 -188 -161 -501 -173 -230 -9 -214 9 -218 -262 -4 -224 3
+-271 41 -291 18 -10 93 -12 313 -9 257 4 298 7 369 26 294 80 506 296 638 652
+36 96 687 2678 687 2723 0 13 -10 33 -23 45 -23 21 -30 22 -290 22 -288 0
+-308 -3 -333 -52 -8 -16 -113 -456 -234 -979 -120 -523 -221 -954 -225 -957
+-3 -3 -9 -1 -14 4 -4 5 -106 432 -226 949 -120 517 -225 955 -233 973 -27 59
+-41 62 -345 62 -253 0 -275 -1 -290 -18z"></path>
+</g>
+</svg>
+  </a>
+
+  <nav class="LinkSiteFooter__nav">
+    <a class="
+    LinkTextLink
+
+  " href="https://support.link.co/" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Help">Help</a>
+    <a class="
+    LinkTextLink
+
+  " href="https://link.co/terms" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Terms">Terms</a>
+    <a class="
+    LinkTextLink
+
+  " href="https://link.co/privacy" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Privacy">Privacy</a>
+    <a class="
+    LinkTextLink
+
+  " href="https://link.co/cookie-settings" data-js-controller="AnalyticsButton" data-analytics-category="Links" data-analytics-action="Clicked" data-analytics-label="Cookie settings">Cookie settings</a>
+
+    <div class="LinkSiteFooter__pickers">
+      <div class="LinkLocaleControl LinkLocaleControl--country" data-js-controller="LinkLocaleControl">
+  <button class="LinkLocaleControl__trigger" data-js-target="LinkLocaleControl.trigger" data-testid="footer-locale-country-button" aria-expanded="false">
+    <svg class="LinkLocaleControl__triggerIcon" width="16" height="16" viewBox="0 0 16 16">
+
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M0.539656 6.04005H4.95966V10.47C4.95966 11.04 5.71966 11.22 5.96966 10.71L10.9297 0.780046C10.9778 0.679279 10.9935 0.56607 10.9746 0.45601C10.9557 0.345949 10.9032 0.244449 10.8242 0.165487C10.7453 0.0865251 10.6438 0.0339849 10.5337 0.0151014C10.4236 -0.00378201 10.3104 0.0119201 10.2097 0.0600455L0.299655 5.03005C-0.200345 5.28005 -0.0303445 6.04005 0.539656 6.04005Z" fill="white"></path>
+
+    </svg>
+    <span data-js-target="LinkLocaleControl.triggerLabel">United States</span>
+  </button>
+
+  <div class="LinkLocaleControl__popup" data-js-target="LinkLocaleControl.popup" aria-hidden="true"><section class="LinkLocaleControlCountryPicker">
+      <div class="LinkLocaleControlCountryPicker__body">
+        <ul class="LinkLocaleControlCountryPicker__list">
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryAU
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="AU" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-au" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Australia" data-testid="footer-locale-country-AU-link" tabindex="-1">Australia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryAT
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="AT" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-at" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Austria" data-testid="footer-locale-country-AT-link" tabindex="-1">Austria</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryBE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="BE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-be" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Belgium" data-testid="footer-locale-country-BE-link" tabindex="-1">Belgium</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryBR
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="BR" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-br" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Brazil" data-testid="footer-locale-country-BR-link" tabindex="-1">Brazil</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryBG
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="BG" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-bg" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Bulgaria" data-testid="footer-locale-country-BG-link" tabindex="-1">Bulgaria</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryCA
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="CA" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-ca" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Canada" data-testid="footer-locale-country-CA-link" tabindex="-1">Canada</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryHR
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="HR" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-hr" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Croatia" data-testid="footer-locale-country-HR-link" tabindex="-1">Croatia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryCY
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="CY" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-cy" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Cyprus" data-testid="footer-locale-country-CY-link" tabindex="-1">Cyprus</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryCZ
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="CZ" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-cz" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Czech Republic" data-testid="footer-locale-country-CZ-link" tabindex="-1">Czech Republic</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryDK
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="DK" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-dk" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Denmark" data-testid="footer-locale-country-DK-link" tabindex="-1">Denmark</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryEE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="EE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-ee" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Estonia" data-testid="footer-locale-country-EE-link" tabindex="-1">Estonia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryFI
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="FI" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-fi" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Finland" data-testid="footer-locale-country-FI-link" tabindex="-1">Finland</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryFR
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="FR" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-fr" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="France" data-testid="footer-locale-country-FR-link" tabindex="-1">France</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryDE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="DE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-de" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Germany" data-testid="footer-locale-country-DE-link" tabindex="-1">Germany</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryGI
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="GI" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-gi" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Gibraltar" data-testid="footer-locale-country-GI-link" tabindex="-1">Gibraltar</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryGR
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="GR" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-gr" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Greece" data-testid="footer-locale-country-GR-link" tabindex="-1">Greece</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryHK
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="HK" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-hk" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Hong Kong" data-testid="footer-locale-country-HK-link" tabindex="-1">Hong Kong</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryHU
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="HU" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-hu" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Hungary" data-testid="footer-locale-country-HU-link" tabindex="-1">Hungary</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryIN
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="IN" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-in" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="India" data-testid="footer-locale-country-IN-link" tabindex="-1">India</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryIE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="IE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-ie" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Ireland" data-testid="footer-locale-country-IE-link" tabindex="-1">Ireland</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryIT
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="IT" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-it" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Italy" data-testid="footer-locale-country-IT-link" tabindex="-1">Italy</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryJP
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="JP" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-jp" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Japan" data-testid="footer-locale-country-JP-link" tabindex="-1">Japan</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryLV
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="LV" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-lv" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Latvia" data-testid="footer-locale-country-LV-link" tabindex="-1">Latvia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryLI
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="LI" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-li" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Liechtenstein" data-testid="footer-locale-country-LI-link" tabindex="-1">Liechtenstein</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryLT
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="LT" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-lt" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Lithuania" data-testid="footer-locale-country-LT-link" tabindex="-1">Lithuania</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryLU
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="LU" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-lu" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Luxembourg" data-testid="footer-locale-country-LU-link" tabindex="-1">Luxembourg</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryMY
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="MY" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-my" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Malaysia" data-testid="footer-locale-country-MY-link" tabindex="-1">Malaysia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryMT
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="MT" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-mt" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Malta" data-testid="footer-locale-country-MT-link" tabindex="-1">Malta</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryMX
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="MX" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-mx" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Mexico" data-testid="footer-locale-country-MX-link" tabindex="-1">Mexico</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryNL
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="NL" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-nl" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Netherlands" data-testid="footer-locale-country-NL-link" tabindex="-1">Netherlands</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryNZ
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="NZ" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-nz" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="New Zealand" data-testid="footer-locale-country-NZ-link" tabindex="-1">New Zealand</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryNO
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="NO" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-no" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Norway" data-testid="footer-locale-country-NO-link" tabindex="-1">Norway</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryPL
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="PL" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-pl" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Poland" data-testid="footer-locale-country-PL-link" tabindex="-1">Poland</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryPT
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="PT" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-pt" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Portugal" data-testid="footer-locale-country-PT-link" tabindex="-1">Portugal</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryRO
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="RO" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-ro" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Romania" data-testid="footer-locale-country-RO-link" tabindex="-1">Romania</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countrySG
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="SG" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-sg" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Singapore" data-testid="footer-locale-country-SG-link" tabindex="-1">Singapore</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countrySK
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="SK" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-sk" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Slovakia" data-testid="footer-locale-country-SK-link" tabindex="-1">Slovakia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countrySI
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="SI" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-si" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Slovenia" data-testid="footer-locale-country-SI-link" tabindex="-1">Slovenia</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryES
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="ES" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-es" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Spain" data-testid="footer-locale-country-ES-link" tabindex="-1">Spain</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countrySE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="SE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-se" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Sweden" data-testid="footer-locale-country-SE-link" tabindex="-1">Sweden</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryCH
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="CH" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-ch" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Switzerland" data-testid="footer-locale-country-CH-link" tabindex="-1">Switzerland</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryTH
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="TH" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-th" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="Thailand" data-testid="footer-locale-country-TH-link" tabindex="-1">Thailand</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryAE
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="AE" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/ae" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="United Arab Emirates" data-testid="footer-locale-country-AE-link" tabindex="-1">United Arab Emirates</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <img class="
+    Flag
+    Flag--countryGB
+    LinkLocaleControlCountryPicker__countryFlagIcon
+  " src="./flagIcons.svg" alt="GB" loading="lazy">
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/en-gb" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="United Kingdom" data-testid="footer-locale-country-GB-link" tabindex="-1">United Kingdom</a>
+</li>
+
+            <li class="LinkLocaleControlCountryPicker__countryListItem">
+
+    <svg class="LinkLocaleControlCountryPicker__countryCheckIcon" width="16" height="16" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zm3.41 4.93L6.64 9.54 5.38 8.18a.7.7 0 0 0-.87-.04.61.61 0 0 0-.18.8l1.5 2.45c.15.22.41.36.69.36.28 0 .53-.14.68-.36.24-.31 4.82-5.78 4.82-5.78.6-.6-.13-1.15-.6-.68z" fill="var(--accentColor)" fill-rule="evenodd"></path></svg>
+
+
+  <a class="
+    LinkTextLink
+
+  " href="https://link.co/us" data-js-controller="AnalyticsButton" data-analytics-category="Countries" data-analytics-action="Clicked" data-analytics-label="United States" data-testid="footer-locale-country-US-link" tabindex="-1">United States</a>
+</li>
+
+        </ul>
+      </div>
+    </section></div>
+</div>
+      <div class="LinkLocaleControl" data-js-controller="LinkLocaleControl">
+  <button class="LinkLocaleControl__trigger" data-js-target="LinkLocaleControl.trigger" data-testid="footer-locale-language-button" aria-expanded="false">
+    <svg class="LinkLocaleControl__triggerIcon" width="16" height="16" viewBox="0 0 16 16">
+
+          <path d="M9.71429 0.697266H2.28571C1.67951 0.697266 1.09812 0.932481 0.66947 1.35117C0.240816 1.76985 0 2.33771 0 2.92982V6.8368C0 7.42891 0.240816 7.99677 0.66947 8.41546C1.09812 8.83414 1.67951 9.06936 2.28571 9.06936H3.14286V12.1391C3.14303 12.2476 3.17554 12.3536 3.23643 12.4443C3.29732 12.535 3.38394 12.6064 3.48571 12.6498C3.55745 12.6817 3.63546 12.6979 3.71429 12.6973C3.85826 12.6975 3.99704 12.6447 4.10286 12.5494L7.94 9.06936H9.71429C10.3205 9.06936 10.9019 8.83414 11.3305 8.41546C11.7592 7.99677 12 7.42891 12 6.8368V2.92982C12 2.33771 11.7592 1.76985 11.3305 1.35117C10.9019 0.932481 10.3205 0.697266 9.71429 0.697266Z" fill="white"></path>
+
+    </svg>
+    <span data-js-target="LinkLocaleControl.triggerLabel">English (United States)</span>
+  </button>
+
+  <div class="LinkLocaleControl__popup" data-js-target="LinkLocaleControl.popup" aria-hidden="true"><section class="LinkLocaleControlLanguagePicker">
+      <ul class="LinkLocaleControlLanguagePicker__list">
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/de-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="German" data-testid="footer-locale-language-de-link" tabindex="-1">Deutsch</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="English (United States)" data-testid="footer-locale-language-en-link" tabindex="-1">English (United States)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/en-gb-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="English (United Kingdom)" data-testid="footer-locale-language-en-GB-link" tabindex="-1">English (United Kingdom)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/es-419-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Spanish (Latin America)" data-testid="footer-locale-language-es-419-link" tabindex="-1">Español (América Latina)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/es-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Spanish (Spain)" data-testid="footer-locale-language-es-link" tabindex="-1">Español (España)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/fr-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="French (France)" data-testid="footer-locale-language-fr-link" tabindex="-1">Français (France)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/fr-ca-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="French (Canada)" data-testid="footer-locale-language-fr-CA-link" tabindex="-1">Français (Canada)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/id-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Indonesian" data-testid="footer-locale-language-id-link" tabindex="-1">Bahasa Indonesia</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/it-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Italian" data-testid="footer-locale-language-it-link" tabindex="-1">Italiano</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/ja-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Japanese" data-testid="footer-locale-language-ja-link" tabindex="-1">日本語</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/nl-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Dutch" data-testid="footer-locale-language-nl-link" tabindex="-1">Nederlands</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/pt-br-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Portuguese (Brazil)" data-testid="footer-locale-language-pt-BR-link" tabindex="-1">Português (Brasil)</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/sv-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Swedish" data-testid="footer-locale-language-sv-link" tabindex="-1">Svenska</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/th-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Thai" data-testid="footer-locale-language-th-link" tabindex="-1">ไทย</a>
+          </li>
+
+
+          <li class="LinkLocaleControlLanguagePicker__listItem">
+            <a class="
+    LinkTextLink
+    LinkLocaleControlLanguagePicker__language
+  " href="https://link.co/zh-cn-us" data-js-controller="AnalyticsButton" data-analytics-category="Languages" data-analytics-action="Clicked" data-analytics-label="Simplified (Mandarin) Chinese" data-testid="footer-locale-language-zh-CN-link" tabindex="-1">简体中文</a>
+          </li>
+
+      </ul>
+    </section></div>
+</div>
+    </div>
+  </nav>
+</footer>
+</div>
+  </div>
+</section>
+    </div>
+
+
+  <iframe class="TrackingSandbox" src="./sandbox.html" sandbox="allow-same-origin allow-scripts" id="TrackingSandbox"></iframe>
+
+  <script defer="" src="./imt-dd9433c9bf50094f1480474f636fa819.js" data-store_url="https://b.stripecdn.com/mkt-statics-srv/assets/store-2ffb13c289c0d3c29bd48e9ef47e5721.html">
+  </script>
+<iframe src="./store-2ffb13c289c0d3c29bd48e9ef47e5721.html" style="display: none;"></iframe></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>

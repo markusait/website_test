@@ -1,0 +1,1 @@
+.LinkSiteHeader{display:flex;justify-content:space-between;align-items:center;padding:32px var(--layoutGutter);max-width:var(--layoutMaxWidth);margin:0 auto}.LinkSiteHeader.LinkSiteHeader--excludeButton{padding-right:0}.LinkSiteHeader--excludeButton .LinkSiteHeader__button{display:none}
